@@ -10,14 +10,14 @@ Proyecto grupal: simulación de eventos discretos de una línea de fabricación 
 
 Marcá `[x]` cuando tu tarea esté terminada **y** subida (PR aceptado). Cada integrante tiene además su propio [Issue](../../issues) con el mismo checklist.
 
-| Fase | Integrante | Rol | Carpeta | Depende de | Estado |
-|:---:|---|---|---|---|:---:|
-| 1 | Integrante 1 | Investigación y marco teórico | [`01-investigacion/`](01-investigacion/) | — | ⬜ |
-| 1 | Integrante 2 | Modelo matemático | [`02-modelo/`](02-modelo/) | — | ⬜ |
-| 1–2 | Integrante 3 | Programación y simulación | [`03-simulacion/`](03-simulacion/) | Parámetros de I2 | ⬜ |
-| 3 | Integrante 4 | Experimentos y análisis | [`04-experimentos/`](04-experimentos/) | Código de I3 | ⬜ |
-| 4 | Integrante 5 | Integración e informe final | [`05-informe/`](05-informe/) | Todos | ⬜ |
-| 5 | Todos | Revisión cruzada final | — | Todos | ⬜ |
+| Fase | Integrante | Rol | Carpeta | Depende de | Issue | Estado |
+|:---:|---|---|---|---|:---:|:---:|
+| 1 | Integrante 1 | Investigación y marco teórico | [`01-investigacion/`](01-investigacion/) | — | [#1](../../issues/1) | ⬜ |
+| 1 | Integrante 2 | Modelo matemático | [`02-modelo/`](02-modelo/) | — | [#2](../../issues/2) | ⬜ |
+| 1–2 | Integrante 3 | Programación y simulación | [`03-simulacion/`](03-simulacion/) | Parámetros de I2 | [#3](../../issues/3) | ⬜ |
+| 3 | Integrante 4 | Experimentos y análisis | [`04-experimentos/`](04-experimentos/) | Código de I3 | [#4](../../issues/4) | ⬜ |
+| 4 | Integrante 5 | Integración e informe final | [`05-informe/`](05-informe/) | Todos | [#5](../../issues/5) | ⬜ |
+| 5 | Todos | Revisión cruzada final | — | Todos | [#6](../../issues/6) | ⬜ |
 
 Estados: ⬜ pendiente · 🟨 en progreso · ✅ terminado
 
