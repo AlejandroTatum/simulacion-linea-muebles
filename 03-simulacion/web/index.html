@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Taller de sillas · simulación de eventos discretos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <header class="cabecera">
+    <div class="titulo">
+      <p class="eyebrow">Simulación de eventos discretos · Grupo 10</p>
+      <h1>Taller de sillas de madera</h1>
+      <p class="bajada">Cada silla entra como tablones y sale laqueada después de pasar por corte, lijado, ensamblaje y acabado. Mirá dónde se forma la cola y por qué.</p>
+    </div>
+    <nav class="escenarios" aria-label="Escenarios">
+      <button data-escenario="E1" aria-pressed="true">E1 · Base</button>
+      <button data-escenario="E2">E2 · 2 ensambladores</button>
+      <button data-escenario="E3">E3 · Ensamblaje 10 min</button>
+      <button data-escenario="SAT">Saturada</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="planta-zona" aria-label="Planta de producción">
+      <div class="indicadores" id="indicadores"></div>
+      <div class="planta-marco">
+        <canvas id="planta" role="img" aria-label="Vista en planta de la línea con las sillas en cola y en proceso"></canvas>
+      </div>
+      <div class="mando">
+        <button id="btn-pausa" class="primario">Pausar</button>
+        <button id="btn-paso" disabled title="Disponible en pausa">Siguiente evento</button>
+        <button id="btn-reiniciar">Reiniciar</button>
+        <button id="btn-semilla">Otra semilla</button>
+        <label class="velocidad">Velocidad
+          <input id="velocidad" type="range" min="0" max="6" step="1" value="2">
+          <output id="velocidad-txt"></output>
+        </label>
+      </div>
+    </section>
+
+    <aside class="bitacora" aria-label="Bitácora de eventos">
+      <h2>Bitácora de eventos</h2>
+      <p class="nota">El reloj no avanza de a segundos: salta al próximo evento de la agenda.</p>
+      <ol id="bitacora"></ol>
+    </aside>
+
+    <section class="estaciones" id="tarjetas" aria-label="Indicadores por estación"></section>
+
+    <section class="graficos">
+      <figure>
+        <figcaption>Sillas en la línea (WIP) <span class="leyenda" id="leyenda-wip"></span></figcaption>
+        <canvas id="graf-wip" height="200"></canvas>
+      </figure>
+      <figure>
+        <figcaption>Cola por estación <span class="leyenda" id="leyenda-colas"></span></figcaption>
+        <canvas id="graf-colas" height="200"></canvas>
+      </figure>
+    </section>
+
+    <section class="ajustes" aria-label="Parámetros">
+      <h2>Parámetros de la línea</h2>
+      <p class="nota">Cambiar un valor reinicia la simulación. Los valores de E1 son los de la Tabla V del informe.</p>
+      <div class="ajuste-llegadas">
+        <label>Tasa de llegadas λ
+          <input id="lambda" type="range" min="1" max="6" step="0.1">
+          <output id="lambda-txt"></output>
+        </label>
+        <fieldset class="distribucion">
+          <legend>Tiempos de proceso</legend>
+          <label><input type="radio" name="dist" value="exponencial" checked> Exponenciales (modelo del informe)</label>
+          <label><input type="radio" name="dist" value="lognormal"> Más regulares, CV = 0,3 (taller real)</label>
+        </fieldset>
+      </div>
+      <div class="ajuste-estaciones" id="ajuste-estaciones"></div>
+    </section>
+
+    <section class="aprender" aria-label="Aprender con la simulación">
+      <div class="pestanas" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="concepto">Cómo funciona</button>
+        <button role="tab" aria-selected="false" data-tab="formulas">Fórmulas en vivo</button>
+        <button role="tab" aria-selected="false" data-tab="experimentos">Experimentos guiados</button>
+        <button role="tab" aria-selected="false" data-tab="validacion">Validación</button>
+        <button role="tab" aria-selected="false" data-tab="preguntas">Autoevaluación</button>
+      </div>
+
+      <div class="panel" id="tab-concepto" role="tabpanel">
+        <div class="columnas">
+          <div>
+            <h3>Las piezas del modelo</h3>
+            <dl class="glosario">
+              <dt>Entidad</dt><dd>La silla. Llega, espera, se procesa y sale.</dd>
+              <dt>Recursos</dt><dd>Los operarios de cada estación (<var>c<sub>i</sub></var>). Cada uno atiende una silla a la vez.</dd>
+              <dt>Eventos</dt><dd>Llegada de una silla, inicio de un proceso, fin de un proceso y salida de la línea. Son los únicos instantes en que el estado cambia.</dd>
+              <dt>Estado</dt><dd>Cuántas sillas hay en cada cola y cuántos operarios están ocupados.</dd>
+              <dt>Reloj</dt><dd>Salta de un evento al siguiente. Pausá y usá <em>Siguiente evento</em> para verlo.</dd>
+            </dl>
+          </div>
+          <div>
+            <h3>Qué representa cada silla</h3>
+            <ul class="etapas" id="etapas"></ul>
+            <p class="nota">Las colas son FIFO y sin límite. Las llegadas siguen un proceso de Poisson y los tiempos de proceso son exponenciales, como en la sección 6.4 del informe.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="tab-formulas" role="tabpanel" hidden>
+        <p>Valores teóricos M/M/c con los parámetros actuales, comparados con lo que va midiendo la simulación desde que arrancó.</p>
+        <div class="tabla-scroll"><table id="tabla-formulas"></table></div>
+        <div class="columnas" id="formulas-linea"></div>
+      </div>
+
+      <div class="panel" id="tab-experimentos" role="tabpanel" hidden>
+        <div class="experimentos" id="experimentos"></div>
+      </div>
+
+      <div class="panel" id="tab-validacion" role="tabpanel" hidden>
+        <p>Repetí el experimento del informe con los parámetros actuales: 30 réplicas de 1 000 h, descartando las primeras 100 h como calentamiento. Con E1 se comparan también los resultados del programa en Python (<code>resumen-base.csv</code>).</p>
+        <button id="btn-replicas" class="primario">Correr 30 réplicas</button>
+        <progress id="progreso" max="30" value="0" hidden></progress>
+        <div class="tabla-scroll"><table id="tabla-validacion"></table></div>
+        <p class="nota" id="nota-validacion"></p>
+      </div>
+
+      <div class="panel" id="tab-preguntas" role="tabpanel" hidden>
+        <div class="preguntas" id="preguntas"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Modelo: <code>src/linea.py</code> · Motor web: <code>web/motor.js</code> · Pruebas: <code>node --test web/tests</code>
+  </footer>
+
+  <script src="motor.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
