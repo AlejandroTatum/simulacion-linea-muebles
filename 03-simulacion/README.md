@@ -26,6 +26,26 @@ python -m pytest                   # 19 pruebas
 
 Opciones: `--config <archivo.json>` elige el escenario y `--salida <carpeta>` cambia dónde se guardan los CSV. El nombre del JSON se usa como sufijo (`e2.json` → `resultados-e2.csv`).
 
+## Simulador web interactivo
+
+`web/index.html` es una versión visual del mismo modelo para exponer y estudiar. Se abre con doble clic (no necesita servidor ni instalación; sin internet usa fuentes del sistema).
+
+| Sección | Para qué sirve |
+|---|---|
+| Planta | Vista en planta de la línea: cada silla cambia de aspecto según la etapa (tablones → piezas cortadas → lijadas → silla armada → laqueada). Muestra colas, operarios ocupados y el cuello de botella. |
+| Bitácora y *Siguiente evento* | En pausa, avanza de un evento a otro para ver cómo salta el reloj de una simulación de eventos discretos. |
+| Indicadores por estación | ρ, Lq y Wq simulados frente a los teóricos M/M/c, actualizados en vivo. |
+| Parámetros | λ, operarios y tiempo medio por estación, y tiempos exponenciales (modelo del informe) o más regulares (CV = 0,3). |
+| Fórmulas en vivo | Capacidad, M/M/1 del cuello de botella y Ley de Little con los números actuales. |
+| Experimentos guiados | E1, E2, E3, saturación y variabilidad, cada uno con lo que se debería observar. |
+| Validación | Corre en el navegador las 30 réplicas de 1 000 h del informe y las compara con la teoría y con `resumen-base.csv`. |
+
+El motor (`web/motor.js`) replica `src/linea.py`: mismas llegadas, colas FIFO, calentamiento y forma de medir. Usa otro generador aleatorio, así que sus números no son idénticos a los de Python, pero caen dentro de la misma variación (por ejemplo, ensamblaje: ρ 75,2 % web, 75,1 % Python, 75,0 % teórico). Pruebas del motor, desde esta carpeta:
+
+```bash
+node --test web/tests              # 8 pruebas, requiere Node 18+
+```
+
 ## Escenarios (para el integrante 4)
 
 Los parámetros están en `escenarios/*.json`, así que no hace falta tocar el código. Para E2 o E3 copiá `base.json` y cambiá solo el ensamblaje:
