@@ -14,7 +14,7 @@ Marcá `[x]` cuando tu tarea esté terminada **y** subida (PR aceptado). Cada in
 |:---:|---|---|---|---|:---:|:---:|
 | 1 | Integrante 1 | Investigación y marco teórico | [`01-investigacion/`](01-investigacion/) | — | [#1](../../issues/1) | ⬜ |
 | 1 | Integrante 2 | Modelo matemático | [`02-modelo/`](02-modelo/) | — | [#2](../../issues/2) | ⬜ |
-| 1–2 | Integrante 3 | Programación y simulación | [`03-simulacion/`](03-simulacion/) | Parámetros de I2 | [#3](../../issues/3) | ⬜ |
+| 1–2 | Integrante 3 | Programación y simulación | [`03-simulacion/`](03-simulacion/) | Parámetros de I2 (Tablas V–VII del informe) | [#3](../../issues/3) | ⬜ |
 | 3 | Integrante 4 | Experimentos y análisis | [`04-experimentos/`](04-experimentos/) | Código de I3 | [#4](../../issues/4) | ⬜ |
 | 4 | Integrante 5 | Integración e informe final | [`05-informe/`](05-informe/) | Todos | [#5](../../issues/5) | ⬜ |
 | 5 | Todos | Revisión cruzada final | — | Todos | [#6](../../issues/6) | ⬜ |
@@ -73,10 +73,25 @@ flowchart LR
 ### Integrante 3 — Programación y simulación
 *Responsable de implementar el modelo* · Carpeta: `03-simulacion/`
 
-- [ ] Desarrollar el programa en Python.
-- [ ] Representar las estaciones y los recursos disponibles.
-- [ ] Simular las llegadas, los tiempos de procesamiento y las colas.
-- [ ] Registrar las sillas terminadas, las esperas y la utilización de los recursos.
+- [ ] Desarrollar el programa en Python 3 con SimPy (NumPy y pandas para los datos), según la sección 6.4.6 del informe.
+- [ ] Representar las estaciones y los recursos disponibles: corte → lijado → ensamblaje → acabado, cada una con su cola FIFO sin límite y `ci` recursos que atienden una silla a la vez.
+- [ ] Simular las llegadas, los tiempos de procesamiento y las colas: llegadas de Poisson con λ = 3 sillas/h y tiempos de servicio exponenciales con media `ti`.
+- [ ] Registrar las sillas terminadas, las esperas y la utilización de los recursos: por réplica, `ρi`, `Lq`, `Wq` por estación y el tiempo total de flujo.
+
+**Parámetros de la línea base (Tabla V del informe):**
+
+| Estación | ci | ti (min/silla) |
+|---|:---:|:---:|
+| Corte | 1 | 8 |
+| Lijado | 1 | 10 |
+| Ensamblaje | 1 | 15 |
+| Acabado | 1 | 12 |
+
+**Configuración de la corrida:** línea vacía al inicio, 30 réplicas independientes con semillas distintas, 1 000 h por réplica y 100 h de calentamiento descartadas.
+
+**Para el integrante 4:** `ci` y `ti` deben poder cambiarse sin tocar el código, porque los escenarios E2 (`c3 = 2`) y E3 (`t3 = 10` min) de la Tabla VII se corren con el mismo programa.
+
+**Control:** el promedio de la simulación base debe acercarse a la Tabla VI del informe (por ejemplo, ensamblaje con ρ ≈ 75 % y Wq ≈ 45 min).
 
 **Entregable:** código ejecutable, instrucciones de ejecución y resultados de la simulación base.
 **Archivos esperados:** `src/` (código), `requirements.txt`, `README.md` con cómo ejecutar, `resultados-base.csv`.
