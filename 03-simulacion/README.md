@@ -22,7 +22,7 @@ Después, desde `03-simulacion/`:
 ```bash
 cd 03-simulacion
 python src/main.py                 # línea base: escenarios/base.json (30 réplicas, ~4 s)
-python -m pytest                   # 29 pruebas
+python -m pytest                   # 35 pruebas
 ```
 
 Cada escenario genera tres archivos (en `03-simulacion/`, o en la carpeta que indique `--salida`):
@@ -36,6 +36,32 @@ Cada escenario genera tres archivos (en `03-simulacion/`, o en la carpeta que in
 `<escenario>` es el nombre del archivo JSON sin extensión: `e2.json` → `resumen-e2.csv`, `graficos/e2.png`.
 
 En pantalla se ve la tabla por estación, la producción por hora, el tiempo total de flujo (con su valor teórico) y el cuello de botella.
+
+## Ver la línea animada
+
+`src/animacion.py` corre una réplica del mismo modelo durante unas horas y la muestra como un taller:
+
+- Cada estación es una mesa de trabajo con sus operarios: de **azul** cuando están trabajando, de **gris** cuando esperan material.
+- Sobre la mesa está la pieza que se procesa y, en el piso, el material que espera turno. La pieza cambia a lo largo de la línea: tablones → piezas cortadas → piezas lijadas → silla armada → silla laqueada.
+- A la derecha, el depósito acumula las sillas terminadas.
+- El cartel de cada estación muestra sus datos (operarios, minutos por silla, ρ) leídos del escenario. El de mayor ρ se marca en rojo como cuello de botella.
+- Abajo, un gráfico muestra cuántas sillas esperan en cada estación a lo largo del tiempo.
+
+```bash
+python src/animacion.py                                       # línea base, 8 h, 5 min por cuadro
+python src/animacion.py --config escenarios/e2.json --horas 24
+python src/animacion.py --guardar graficos/base.gif           # guarda un GIF en vez de abrir la ventana
+```
+
+| Opción | Para qué |
+|---|---|
+| `--config` | Escenario a mostrar (cualquier JSON de `escenarios/`). |
+| `--horas` | Horas simuladas desde que abre la línea, vacía (por defecto 8). |
+| `--paso` | Minutos simulados entre cuadros (por defecto 5). Más chico = más fluido y más lento. |
+| `--semilla` | Cambia la secuencia aleatoria (por defecto, la del escenario). |
+| `--guardar` | Archivo `.gif` donde guardar la animación. |
+
+Es para ver y explicar la dinámica, no para medir: una sola réplica corta varía mucho. Los números del informe salen de `main.py`.
 
 ## Cambiar de escenario
 
@@ -75,6 +101,7 @@ Si falta un campo o un valor no tiene sentido (por ejemplo `recursos: 0`), el pr
 | `src/main.py` | Lee los escenarios, corre la simulación y escribe CSV y gráfico. Es lo único que hace falta ejecutar. |
 | `src/linea.py` | El modelo: llegadas, recorrido de cada silla por las estaciones, medición de indicadores y resumen frente a la teoría. |
 | `src/teoria.py` | Fórmulas M/M/c (ecuaciones 7–14) y el tiempo de flujo teórico de la línea. |
+| `src/animacion.py` | Animación del taller para una réplica: mesas, operarios, material en espera y depósito. Usa el modelo de `linea.py` sin cambiarlo; solo le pide que anote cada cambio de estado. |
 | `src/graficos.py` | Gráfico de barras simulado vs. teórico. Se usa desde `main.py`, pero también se puede correr solo: `python src/graficos.py --resumen resumen-e2.csv --salida graficos/e2.png`. |
 | `tests/` | Pruebas: teoría frente a las tablas del informe, reproducibilidad con semilla, Ley de Little, escenarios y línea de comandos. |
 

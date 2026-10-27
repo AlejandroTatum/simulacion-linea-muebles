@@ -58,7 +58,7 @@ class Estacion:
     and added to an area. Area / window length gives the average.
     """
 
-    def __init__(self, env, nombre, recursos, tiempo_min, inicio):
+    def __init__(self, env, nombre, recursos, tiempo_min, inicio, traza=None):
         self.nombre = nombre
         self.recursos = recursos
         self.tiempo_min = tiempo_min
@@ -70,6 +70,7 @@ class Estacion:
         self.area_cola = 0.0
         self.area_ocupados = 0.0
         self.esperas = []
+        self.traza = traza  # optional list of (time, station, queue, busy) for the animation
 
     def acumular(self, ahora):
         """Add the current state's area since the last change (warm-up excluded)."""
@@ -84,6 +85,8 @@ class Estacion:
         self.acumular(ahora)
         self.en_cola += cola
         self.ocupados += ocupados
+        if self.traza is not None:
+            self.traza.append((ahora, self.nombre, self.en_cola, self.ocupados))
 
 
 def _silla(env, estaciones, rng, inicio, registro):
@@ -103,6 +106,8 @@ def _silla(env, estaciones, rng, inicio, registro):
     # only chairs that also arrived after the warm-up, so it is not biased.
     if env.now >= inicio:
         registro["terminadas"] += 1
+        if registro["salidas"] is not None:
+            registro["salidas"].append(env.now)
     if llegada >= inicio:
         registro["flujos"].append(env.now - llegada)
 
@@ -114,16 +119,22 @@ def _llegadas(env, estaciones, rng, inicio, registro, media_min):
         env.process(_silla(env, estaciones, rng, inicio, registro))
 
 
-def simular_replica(cfg, semilla):
-    """Run one replica and return per-station and line-level indicators."""
+def simular_replica(cfg, semilla, traza=None, salidas=None):
+    """Run one replica and return per-station and line-level indicators.
+
+    Optional recorders for the animation (they do not affect the results):
+      traza    list that receives (time_min, station, chairs_in_queue, busy_servers)
+               on every queue or worker change
+      salidas  list that receives the time each counted chair leaves the line
+    """
     rng = np.random.default_rng(semilla)
     env = simpy.Environment()
     inicio = cfg["calentamiento_h"] * 60
     fin = cfg["duracion_h"] * 60
     ventana = fin - inicio
-    estaciones = [Estacion(env, e["nombre"], e["recursos"], e["tiempo_min"], inicio)
+    estaciones = [Estacion(env, e["nombre"], e["recursos"], e["tiempo_min"], inicio, traza)
                   for e in cfg["estaciones"]]
-    registro = {"terminadas": 0, "flujos": []}
+    registro = {"terminadas": 0, "flujos": [], "salidas": salidas}
     env.process(_llegadas(env, estaciones, rng, inicio, registro,
                           60 / cfg["tasa_llegadas_h"]))
     env.run(until=fin)
