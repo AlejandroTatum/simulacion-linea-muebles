@@ -36,7 +36,7 @@ def correr_escenario(ruta, cfg, salida):
     # Line-level indicators repeat on every station row, so keep one row per replica.
     linea = replicas.drop_duplicates("replica")
     flujo_teo = flujo_teorico_min(cfg["tasa_llegadas_h"], cfg["estaciones"])
-    teoria = f"teoría {flujo_teo:.1f} min" if flujo_teo else "sin régimen estable"
+    teoria = f"teoría {flujo_teo:.1f} min" if flujo_teo is not None else "sin régimen estable"
 
     print(f"Escenario: {cfg['nombre']} | {cfg['replicas']} réplicas de {cfg['duracion_h']} h "
           f"({cfg['calentamiento_h']} h de calentamiento)")
@@ -70,11 +70,23 @@ def main(argv=None):
             print(f"Error: {error}", file=sys.stderr)
             return 1
 
-    args.salida.mkdir(parents=True, exist_ok=True)
-    for i, (ruta, cfg) in enumerate(escenarios):
-        if i:
-            print()
-        correr_escenario(ruta, cfg, args.salida)
+    # Output files are named after the JSON file, so equal names would overwrite.
+    nombres = [ruta.stem for ruta, _ in escenarios]
+    repetido = next((n for n in nombres if nombres.count(n) > 1), None)
+    if repetido:
+        print(f"Error: dos escenarios se llaman '{repetido}'; sus resultados se pisarían",
+              file=sys.stderr)
+        return 1
+
+    try:
+        args.salida.mkdir(parents=True, exist_ok=True)
+        for i, (ruta, cfg) in enumerate(escenarios):
+            if i:
+                print()
+            correr_escenario(ruta, cfg, args.salida)
+    except OSError as error:
+        print(f"Error: no se pudo escribir en {args.salida}: {error}", file=sys.stderr)
+        return 1
     return 0
 
 

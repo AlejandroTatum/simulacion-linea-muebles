@@ -77,3 +77,26 @@ def test_cli_reports_missing_scenario_file(tmp_path, capsys):
     assert main(["--config", str(tmp_path / "nada.json"), "--salida", str(tmp_path / "out")]) == 1
     assert capsys.readouterr().err == f"Error: no existe el escenario {tmp_path / 'nada.json'}\n"
     assert not (tmp_path / "out").exists()
+
+
+def test_cli_rejects_two_scenarios_that_would_overwrite_each_other(tmp_path, capsys):
+    (tmp_path / "x").mkdir()
+    (tmp_path / "y").mkdir()
+    a = _corto(tmp_path / "x", "base")
+    b = _corto(tmp_path / "y", "base")
+
+    assert main(["--config", str(a), str(b), "--salida", str(tmp_path / "out")]) == 1
+
+    captura = capsys.readouterr()
+    assert captura.out == ""
+    assert captura.err == "Error: dos escenarios se llaman 'base'; sus resultados se pisarían\n"
+    assert not (tmp_path / "out").exists()
+
+
+def test_cli_reports_unwritable_output_folder(tmp_path, capsys):
+    ocupado = tmp_path / "archivo"
+    ocupado.write_text("not a folder")
+
+    assert main(["--config", str(_corto(tmp_path, "a")), "--salida", str(ocupado)]) == 1
+
+    assert capsys.readouterr().err.startswith(f"Error: no se pudo escribir en {ocupado}")

@@ -22,7 +22,7 @@ Después, desde `03-simulacion/`:
 ```bash
 cd 03-simulacion
 python src/main.py                 # línea base: escenarios/base.json (30 réplicas, ~4 s)
-python -m pytest                   # 27 pruebas
+python -m pytest                   # 29 pruebas
 ```
 
 Cada escenario genera tres archivos (en `03-simulacion/`, o en la carpeta que indique `--salida`):
@@ -52,7 +52,7 @@ python src/main.py --config escenarios/e2.json                      # uno
 python src/main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.json   # varios seguidos
 ```
 
-Si se pasan varios archivos, primero se validan todos y recién después se simula; un error en el último no hace perder la corrida de los primeros.
+Si se pasan varios archivos, primero se validan todos y recién después se simula; un error en el último no hace perder la corrida de los primeros. Los archivos deben tener nombres distintos, porque los resultados se guardan con ese nombre.
 
 Para un escenario nuevo, copiá `base.json` con otro nombre y cambiá lo que necesites. Campos:
 
