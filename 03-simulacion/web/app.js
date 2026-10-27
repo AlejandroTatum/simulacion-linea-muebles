@@ -104,6 +104,9 @@
 
   function avanzar(hasta) {
     const L = S.linea;
+    // Step mode can move the clock past pending samples; skip them instead of
+    // recording the current state under a stale time.
+    while (S.proxMuestra < L.ahora) S.proxMuestra += PASO_MUESTRA;
     while (S.proxMuestra <= hasta) {
       L.avanzarHasta(S.proxMuestra);
       muestrear();

@@ -67,3 +67,14 @@ test("el modo paso a paso procesa un evento y lo anota en la bitácora", () => {
   assert.deepEqual(linea.bitacora.map((e) => e.tipo), ["llegada", "inicio"]);
   assert.equal(linea.bitacora[1].valor, 0);
 });
+
+test("avanzar a un tiempo pasado después de un paso no retrocede el reloj", () => {
+  const linea = new Linea(ESCENARIOS.E1, 5);
+  linea.siguienteEvento();
+  linea.siguienteEvento();
+  const t = linea.ahora;
+  linea.avanzarHasta(t / 2);
+  assert.equal(linea.ahora, t);
+  linea.avanzarHasta(t + 60);
+  assert.equal(linea.ahora, t + 60);
+});

@@ -210,9 +210,10 @@
       return this.ahora;
     }
 
+    /** Advance the clock to t; never rewinds when step mode already moved past t. */
     avanzarHasta(t) {
       while (this.agenda.size && this.agenda.peek().t <= t) this.procesar(this.agenda.pop());
-      this.ahora = t;
+      this.ahora = Math.max(this.ahora, t);
     }
 
     estado() {
