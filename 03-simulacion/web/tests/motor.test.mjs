@@ -100,3 +100,17 @@ test("el calentamiento se expone como finCalentamiento", () => {
   assert.equal(linea.finCalentamiento, 120);
   assert.equal(linea.inicio, undefined);
 });
+
+test("siguienteMuestra queda sobre la grilla exacta con pasos fraccionarios", () => {
+  // prox + k * paso drifts: 1.2000000000000002 + 0.1 gives 1.3000000000000003
+  assert.equal(siguienteMuestra(1.2000000000000002, 1.296, 0.1), 13 * 0.1);
+  assert.equal(siguienteMuestra(4, 7.55, 0.2), 38 * 0.2);
+  for (let i = 0; i < 2000; i++) {
+    const paso = [0.1, 0.2, 10, 1 / 3][i % 4];
+    const ahora = ((i * 7919) % 1000) / 37;
+    const r = siguienteMuestra(0, ahora, paso);
+    const k = Math.round(r / paso);
+    assert.equal(r, k * paso, `off grid: ${r}`);
+    assert.ok(r >= ahora && (k - 1) * paso < ahora, `not the first sample at or after ${ahora}: ${r}`);
+  }
+});

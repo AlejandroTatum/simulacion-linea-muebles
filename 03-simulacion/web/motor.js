@@ -278,10 +278,17 @@
     return ((1 + cvServicio ** 2) / 2) * (rho / (1 - rho)) * tiempoMin;
   }
 
-  /** First sample time at or after the clock; step mode can leave older ones behind. */
+  /**
+   * First sample time at or after the clock; step mode can leave older ones behind.
+   * Samples sit on the grid k * paso anchored at 0, computed from the index so
+   * fractional steps do not accumulate rounding error.
+   */
   function siguienteMuestra(prox, ahora, paso) {
     if (prox >= ahora) return prox;
-    return prox + Math.ceil((ahora - prox) / paso) * paso;
+    let k = Math.ceil(ahora / paso);
+    if (k * paso < ahora) k += 1;
+    else if ((k - 1) * paso >= ahora) k -= 1;
+    return k * paso;
   }
 
   const api = { Linea, simular, mmc, ESCENARIOS, generador, CV_LOGNORMAL, kingmanWq, siguienteMuestra };
