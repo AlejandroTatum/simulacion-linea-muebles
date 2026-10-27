@@ -40,10 +40,10 @@ Opciones: `--config <archivo.json>` elige el escenario y `--salida <carpeta>` ca
 | Experimentos guiados | E1, E2, E3, saturación y variabilidad, cada uno con lo que se debería observar. |
 | Validación | Corre en el navegador las 30 réplicas de 1 000 h del informe y las compara con la teoría y con `resumen-base.csv`. |
 
-El motor (`web/motor.js`) replica `src/linea.py`: mismas llegadas, colas FIFO, calentamiento y forma de medir. Usa otro generador aleatorio, así que sus números no son idénticos a los de Python, pero caen dentro de la misma variación (por ejemplo, ensamblaje: ρ 75,2 % web, 75,1 % Python, 75,0 % teórico). Pruebas del motor, desde esta carpeta:
+El motor (`web/motor.js`) replica `src/linea.py`: mismas llegadas, colas FIFO, calentamiento y forma de medir. Usa otro generador aleatorio, así que sus números no son idénticos a los de Python, pero caen dentro de la misma variación (por ejemplo, ensamblaje: ρ 75,2 % web, 75,1 % Python, 75,0 % teórico). La teoría de la línea y los textos de los experimentos guiados viven en `web/experimentos.js`, calculados a partir de los escenarios del motor. Pruebas del motor y de esos textos, desde esta carpeta:
 
 ```bash
-node --test web/tests              # 8 pruebas, requiere Node 18+
+node --test web/tests              # 18 pruebas, requiere Node 18+
 ```
 
 ## Escenarios (para el integrante 4)
