@@ -1,0 +1,14 @@
+{
+  "nombre": "E2 - Dos ensambladores",
+  "tasa_llegadas_h": 3,
+  "estaciones": [
+    {"nombre": "Corte", "recursos": 1, "tiempo_min": 8},
+    {"nombre": "Lijado", "recursos": 1, "tiempo_min": 10},
+    {"nombre": "Ensamblaje", "recursos": 2, "tiempo_min": 15},
+    {"nombre": "Acabado", "recursos": 1, "tiempo_min": 12}
+  ],
+  "replicas": 30,
+  "duracion_h": 1000,
+  "calentamiento_h": 100,
+  "semilla": 2026
+}

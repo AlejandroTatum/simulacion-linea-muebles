@@ -3,6 +3,16 @@
 Chairs arrive as a Poisson process and visit every station in order. Each
 station has an unlimited FIFO queue and `recursos` servers with exponential
 service times. Internal time unit: minutes.
+
+How it fits together:
+  _llegadas         creates a new chair every exponential interarrival time
+  _silla            walks one chair through the stations (queue -> service)
+  Estacion          SimPy resource plus counters for the indicators
+  simular_replica   one run of duracion_h hours; returns its indicators
+  ejecutar          all replicas, plus the comparison against M/M/c theory
+
+Warm-up: the line starts empty, which is not its usual state, so everything
+before calentamiento_h is simulated but left out of the indicators.
 """
 
 import json
@@ -41,9 +51,14 @@ def cargar_config(ruta):
 
 
 class Estacion:
-    """A station plus time-weighted counters restricted to the measured window."""
+    """A station plus time-weighted counters restricted to the measured window.
 
-    def __init__(self, env, nombre, recursos, tiempo_min, inicio):
+    Utilization and Lq are time averages: every time the queue or the number of
+    busy servers changes, the previous value is multiplied by how long it lasted
+    and added to an area. Area / window length gives the average.
+    """
+
+    def __init__(self, env, nombre, recursos, tiempo_min, inicio, traza=None):
         self.nombre = nombre
         self.recursos = recursos
         self.tiempo_min = tiempo_min
@@ -55,8 +70,10 @@ class Estacion:
         self.area_cola = 0.0
         self.area_ocupados = 0.0
         self.esperas = []
+        self.traza = traza  # optional list of (time, station, queue, busy) for the animation
 
     def acumular(self, ahora):
+        """Add the current state's area since the last change (warm-up excluded)."""
         desde = max(self.t, self.inicio)
         if ahora > desde:
             self.area_cola += self.en_cola * (ahora - desde)
@@ -64,52 +81,67 @@ class Estacion:
         self.t = ahora
 
     def cambio(self, ahora, cola=0, ocupados=0):
+        """Record a change: +1/-1 chairs in queue and/or busy servers."""
         self.acumular(ahora)
         self.en_cola += cola
         self.ocupados += ocupados
+        if self.traza is not None:
+            self.traza.append((ahora, self.nombre, self.en_cola, self.ocupados))
 
 
 def _silla(env, estaciones, rng, inicio, registro):
+    """Life of one chair: queue and get processed at each station in order."""
     llegada = env.now
     for est in estaciones:
         entrada = env.now
-        est.cambio(env.now, cola=1)
+        est.cambio(env.now, cola=1)  # joins the queue
         with est.recurso.request() as turno:
-            yield turno
+            yield turno  # waits here until a worker is free (FIFO)
             est.cambio(env.now, cola=-1, ocupados=1)
-            if entrada >= inicio:
+            if entrada >= inicio:  # only chairs that queued after the warm-up count
                 est.esperas.append(env.now - entrada)
-            yield env.timeout(rng.exponential(est.tiempo_min))
+            yield env.timeout(rng.exponential(est.tiempo_min))  # being processed
             est.cambio(env.now, ocupados=-1)
+    # Throughput counts every chair finished in the measured window; flow time
+    # only chairs that also arrived after the warm-up, so it is not biased.
     if env.now >= inicio:
         registro["terminadas"] += 1
+        if registro["salidas"] is not None:
+            registro["salidas"].append(env.now)
     if llegada >= inicio:
         registro["flujos"].append(env.now - llegada)
 
 
 def _llegadas(env, estaciones, rng, inicio, registro, media_min):
+    """Poisson arrivals: exponential gaps with mean 60 / tasa_llegadas_h minutes."""
     while True:
         yield env.timeout(rng.exponential(media_min))
         env.process(_silla(env, estaciones, rng, inicio, registro))
 
 
-def simular_replica(cfg, semilla):
-    """Run one replica and return per-station and line-level indicators."""
+def simular_replica(cfg, semilla, traza=None, salidas=None):
+    """Run one replica and return per-station and line-level indicators.
+
+    Optional recorders for the animation (they do not affect the results):
+      traza    list that receives (time_min, station, chairs_in_queue, busy_servers)
+               on every queue or worker change
+      salidas  list that receives the time each counted chair leaves the line
+    """
     rng = np.random.default_rng(semilla)
     env = simpy.Environment()
     inicio = cfg["calentamiento_h"] * 60
     fin = cfg["duracion_h"] * 60
     ventana = fin - inicio
-    estaciones = [Estacion(env, e["nombre"], e["recursos"], e["tiempo_min"], inicio)
+    estaciones = [Estacion(env, e["nombre"], e["recursos"], e["tiempo_min"], inicio, traza)
                   for e in cfg["estaciones"]]
-    registro = {"terminadas": 0, "flujos": []}
+    registro = {"terminadas": 0, "flujos": [], "salidas": salidas}
     env.process(_llegadas(env, estaciones, rng, inicio, registro,
                           60 / cfg["tasa_llegadas_h"]))
     env.run(until=fin)
 
     filas = []
     for est in estaciones:
-        est.acumular(fin)
+        est.acumular(fin)  # close the last open interval before averaging
         filas.append({
             "estacion": est.nombre,
             "recursos": est.recursos,
@@ -131,6 +163,7 @@ def _error_pct(simulado, teorico):
 
 def ejecutar(cfg):
     """Run every replica; return (per-replica rows, per-station summary)."""
+    # One independent, reproducible seed per replica, derived from the base seed.
     semillas = np.random.SeedSequence(cfg["semilla"]).generate_state(cfg["replicas"])
     filas = []
     for i, semilla in enumerate(semillas, start=1):
@@ -165,6 +198,9 @@ def ejecutar(cfg):
             "wq_min_media": datos["wq_min"].mean(),
             "wq_min_desv": datos["wq_min"].std(),
         }
+        # Theory assumes every station receives lambda, which holds while the
+        # stations before it are stable. An unstable station (rho >= 1) has no
+        # steady state, so its theory is left as NaN.
         try:
             teo = mmc(lam, mu, e["recursos"])
             fila.update({
