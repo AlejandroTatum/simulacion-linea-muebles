@@ -570,7 +570,7 @@
         texto: "Llegan más pedidos de los que ensamblaje puede hacer. Mirá el gráfico de WIP durante varias horas.",
         espera: `Ensamblaje queda con ρ = ${fmt(sat.estaciones[2].rho, 3)} &gt; 1: su cola crece sin límite (~${fmt(lamSat - sat.estaciones[2].C, 1)} sillas más por hora) y la producción se clava en ${fmt(sat.throughput, 0)} sillas/h.` },
       { clave: "E1", dist: "lognormal", titulo: "Variabilidad · mismo ρ, menos cola",
-        texto: "Mismos tiempos medios, pero procesos más regulares (CV = ${fmt(M.CV_LOGNORMAL, 1)}), como en un taller con métodos estandarizados.",
+        texto: `Mismos tiempos medios, pero procesos más regulares (CV = ${fmt(M.CV_LOGNORMAL, 1)}), como en un taller con métodos estandarizados.`,
         espera: `ρ no cambia (${pct(ensE1.rho, 0)}), pero la espera en ensamblaje baja hacia ~${fmt(kingman, 0)} min (aproximación de Kingman) en lugar de ${fmt(ensE1.teo.wq_min, 0)}. La cola nace de la variabilidad, no solo de la carga.` },
     ];
     $("#experimentos").innerHTML = lista.map((x, i) => `
