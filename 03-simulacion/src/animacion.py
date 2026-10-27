@@ -21,19 +21,6 @@ from linea import cargar_config, simular_replica
 
 RAIZ = Path(__file__).resolve().parents[1]
 
-# Layout in drawing units (the axes keep a 1:1 aspect so shapes look real).
-ANCHO_ESTACION = 3.4  # horizontal space per station
-COLUMNAS_COLA, FILAS_COLA = 3, 2  # material drawn in front of each bench; the rest is "+n"
-COLUMNAS_DEPOSITO, FILAS_DEPOSITO = 3, 4  # finished chairs drawn in the warehouse
-
-# Wood colours, from raw plank to lacquered chair.
-MADERA_CRUDA = "#c8955c"
-MADERA_CORTADA = "#d9a66b"
-MADERA_LIJADA = "#efcf9c"
-MADERA_LAQUEADA = "#7a3f17"
-BORDE = "#5a3a1a"
-PISO = "#f3ece2"
-
 
 def estados_en(traza, nombres, tiempos):
     """State of each station at each sample time.
@@ -62,35 +49,74 @@ def utilizacion_teorica(cfg, est):
     return cfg["tasa_llegadas_h"] / (est["recursos"] * 60 / est["tiempo_min"])
 
 
-# ---------- Drawings. Each returns the patches it added, hidden until shown. ----------
+# ---------- Palette: one meaning per colour ----------
 
-def _rect(ax, x, y, w, h, color, borde=BORDE, visible=False, **kw):
+PARED = "#efe7da"            # workshop wall
+PISO = "#d8c19c"             # wooden floor
+PISO_TABLA = "#cbb187"       # floorboard joints
+MESA = "#8a5a33"             # workbench top
+MESA_CANTO = "#6b4226"       # bench edge and legs
+TARIMA = "#b48f5e"           # pallet under waiting material
+MADERA_CRUDA = "#c08a52"     # raw plank
+MADERA_CORTADA = "#d6a467"   # cut parts
+MADERA_LIJADA = "#ecca95"    # sanded parts and unfinished chair
+MADERA_LAQUEADA = "#6e3816"  # lacquered chair
+VETA = "#5a3a1a"             # wood outline
+TRABAJANDO = "#2f6ea5"       # worker busy
+LIBRE = "#a5adb5"            # worker idle
+PIEL = "#eec39d"
+CARTEL = "#2f3e4c"           # station sign
+CUELLO = "#b8322a"           # bottleneck: the only red on screen
+TEXTO = "#2b2622"
+TEXTO_SUAVE = "#6d625a"
+
+# Layout in drawing units (the axes keep a 1:1 aspect so shapes look real).
+ANCHO_ESTACION = 3.4         # horizontal space per station
+ANCHO_LLEGADA = 2.4          # arrival area on the left
+ANCHO_DEPOSITO = 2.6         # warehouse on the right
+Y_PISO = 0.55                # where the wall meets the floor
+COLUMNAS_COLA, FILAS_COLA = 3, 2           # material drawn on each pallet; the rest is "+n"
+COLUMNAS_DEPOSITO, FILAS_DEPOSITO = 3, 4   # finished chairs drawn in the warehouse
+
+
+# ---------- Drawings. Each returns the artists it added, hidden until shown. ----------
+
+def _sombra():
+    """Soft drop shadow: offset down-right, translucent."""
+    from matplotlib import patheffects
+    return [patheffects.SimplePatchShadow(offset=(2, -2), alpha=0.18), patheffects.Normal()]
+
+
+def _rect(ax, x, y, w, h, color, borde=VETA, visible=False, sombra=False, **kw):
     from matplotlib.patches import Rectangle
-    return ax.add_patch(Rectangle((x, y), w, h, fc=color, ec=borde, lw=0.8,
-                                  visible=visible, **kw))
+    r = ax.add_patch(Rectangle((x, y), w, h, fc=color, ec=borde, lw=0.7, visible=visible, **kw))
+    if sombra:
+        r.set_path_effects(_sombra())
+    return r
 
 
-def dibujar_tablones(ax, x, y):
+def dibujar_tablones(ax, x, y, visible=False):
     """Three raw planks stacked: the material that arrives with an order."""
-    return [_rect(ax, x, y + k * 0.11, 0.62, 0.09, MADERA_CRUDA) for k in range(3)]
+    return [_rect(ax, x, y + k * 0.12, 0.66, 0.1, MADERA_CRUDA, visible=visible) for k in range(3)]
 
 
 def dibujar_piezas(ax, x, y, color):
-    """Cut parts of a chair: seat and backrest boards plus two legs."""
-    return [_rect(ax, x, y, 0.34, 0.08, color),
-            _rect(ax, x, y + 0.12, 0.34, 0.08, color),
-            _rect(ax, x + 0.42, y, 0.07, 0.36, color),
-            _rect(ax, x + 0.54, y, 0.07, 0.36, color)]
+    """Cut parts of one chair: seat and backrest boards plus two legs."""
+    return [_rect(ax, x, y, 0.36, 0.09, color),
+            _rect(ax, x, y + 0.13, 0.36, 0.09, color),
+            _rect(ax, x + 0.44, y, 0.08, 0.4, color),
+            _rect(ax, x + 0.57, y, 0.08, 0.4, color)]
 
 
-def dibujar_silla(ax, x, y, color, escala=1.0):
-    """A chair seen from the side: front leg, seat, tall back post and backrest rail."""
+def dibujar_silla(ax, x, y, color, escala=1.0, visible=False):
+    """A chair seen from the side: front leg, seat, tall back post and two backrest rails."""
     s = escala
-    return [_rect(ax, x, y, 0.07 * s, 0.3 * s, color),                       # front leg
-            _rect(ax, x, y + 0.28 * s, 0.48 * s, 0.07 * s, color),            # seat
-            _rect(ax, x + 0.41 * s, y, 0.07 * s, 0.75 * s, color),            # back post
-            _rect(ax, x + 0.22 * s, y + 0.62 * s, 0.26 * s, 0.07 * s, color),  # backrest rail
-            _rect(ax, x + 0.22 * s, y + 0.46 * s, 0.26 * s, 0.05 * s, color)]  # lower rail
+    partes = [_rect(ax, x, y, 0.07 * s, 0.32 * s, color, visible=visible),                       # front leg
+              _rect(ax, x, y + 0.3 * s, 0.5 * s, 0.07 * s, color, visible=visible),              # seat
+              _rect(ax, x + 0.43 * s, y, 0.07 * s, 0.8 * s, color, visible=visible),             # back post
+              _rect(ax, x + 0.24 * s, y + 0.66 * s, 0.26 * s, 0.07 * s, color, visible=visible),  # top rail
+              _rect(ax, x + 0.24 * s, y + 0.5 * s, 0.26 * s, 0.05 * s, color, visible=visible)]   # lower rail
+    return partes
 
 
 def dibujar_material(ax, etapa, x, y):
@@ -102,21 +128,78 @@ def dibujar_material(ax, etapa, x, y):
     if etapa == 2:
         return dibujar_piezas(ax, x, y, MADERA_LIJADA)
     # From the fourth station on the piece is already a chair waiting for its finish.
-    return dibujar_silla(ax, x, y, MADERA_LIJADA, escala=0.8)
+    return dibujar_silla(ax, x, y, MADERA_LIJADA, escala=0.78)
 
 
-def dibujar_operario(ax, x, y):
-    """A worker standing behind the bench. Returns (body, head) to recolour."""
-    from matplotlib.patches import Circle, FancyBboxPatch
-    cuerpo = ax.add_patch(FancyBboxPatch((x - 0.2, y), 0.4, 0.62, boxstyle="round,pad=0.04",
-                                         fc="#9aa3ab", ec="#3d4a55", lw=1))
-    cabeza = ax.add_patch(Circle((x, y + 0.86), 0.17, fc="#f1c9a5", ec="#7a5a40", lw=1))
-    return cuerpo, cabeza
+class Operario:
+    """A worker behind the bench: blue and reaching for the piece when busy, grey and idle otherwise."""
+
+    def __init__(self, ax, x, y):
+        from matplotlib.patches import Circle, FancyBboxPatch
+        self.x, self.y = x, y
+        self.cuerpo = ax.add_patch(FancyBboxPatch((x - 0.21, y), 0.42, 0.66,
+                                                  boxstyle="round,pad=0.05,rounding_size=0.14",
+                                                  fc=LIBRE, ec="none"))
+        self.cabeza = ax.add_patch(Circle((x, y + 0.92), 0.18, fc=PIEL, ec="none"))
+        self.brazos = [ax.plot([], [], color=LIBRE, lw=5, solid_capstyle="round")[0] for _ in range(2)]
+        self.trabajar(False)
+
+    def trabajar(self, ocupado):
+        x, y = self.x, self.y
+        color = TRABAJANDO if ocupado else LIBRE
+        self.cuerpo.set_facecolor(color)
+        for brazo, lado in zip(self.brazos, (-1, 1)):
+            brazo.set_color(color)
+            if ocupado:  # both hands down on the piece in front of the body
+                brazo.set_data([x + lado * 0.2, x + lado * 0.08], [y + 0.55, y + 0.12])
+            else:        # arms hanging at the sides
+                brazo.set_data([x + lado * 0.24, x + lado * 0.27], [y + 0.55, y + 0.2])
 
 
-def mostrar(patches, visible):
-    for p in patches:
-        p.set_visible(visible)
+def mostrar(artistas, visible):
+    for a in artistas:
+        a.set_visible(visible)
+
+
+def dibujar_fondo(ax, ancho, alto_min, alto_max):
+    """Wall and wooden floor: the only texture is the floorboards."""
+    _rect(ax, 0, Y_PISO, ancho, alto_max - Y_PISO, PARED, borde="none", visible=True, zorder=-10)
+    _rect(ax, 0, alto_min, ancho, Y_PISO - alto_min, PISO, borde="none", visible=True, zorder=-10)
+    y = Y_PISO - 0.5
+    while y > alto_min:
+        ax.plot([0, ancho], [y, y], color=PISO_TABLA, lw=0.8, zorder=-9)
+        y -= 0.5
+    ax.plot([0, ancho], [Y_PISO, Y_PISO], color=MESA_CANTO, lw=1.2, alpha=0.5, zorder=-9)
+
+
+def dibujar_tarima(ax, cx, y, ancho=2.7):
+    """Low pallet on the floor where material waits its turn."""
+    _rect(ax, cx - ancho / 2, y, ancho, 0.1, TARIMA, visible=True, sombra=True)
+    for k in range(3):  # three blocks underneath: both ends and the middle
+        bx = cx - ancho / 2 + 0.05 + k * (ancho - 0.4) / 2
+        _rect(ax, bx, y - 0.1, 0.3, 0.1, TARIMA, visible=True)
+
+
+def dibujar_mesa(ax, cx):
+    """Workbench: thick top with a darker front edge, two legs."""
+    _rect(ax, cx - 1.38, 1.06, 2.76, 0.18, MESA, borde=MESA_CANTO, visible=True, sombra=True)
+    _rect(ax, cx - 1.38, 1.0, 2.76, 0.07, MESA_CANTO, borde="none", visible=True)
+    for lx in (cx - 1.25, cx + 1.11):
+        _rect(ax, lx, Y_PISO - 0.05, 0.14, 0.97, MESA_CANTO, borde="none", visible=True)
+
+
+def dibujar_cartel(ax, cx, texto, color):
+    """Sign hanging from the ceiling with the station data."""
+    from matplotlib.patches import FancyBboxPatch
+    for dx in (-0.8, 0.8):
+        ax.plot([cx + dx, cx + dx], [3.85, 4.4], color=TEXTO_SUAVE, lw=0.8)
+    cartel = ax.add_patch(FancyBboxPatch((cx - 1.3, 2.95), 2.6, 0.9,
+                                         boxstyle="round,pad=0.02,rounding_size=0.12",
+                                         fc=color, ec="none"))
+    cartel.set_path_effects(_sombra())
+    titulo, detalle = texto
+    ax.text(cx, 3.6, titulo, ha="center", va="center", fontsize=11, weight="bold", color="white")
+    ax.text(cx, 3.2, detalle, ha="center", va="center", fontsize=8.5, color="#f2ece4")
 
 
 # ---------- Animation ----------
@@ -140,88 +223,107 @@ def animar(cfg, horas, paso_min, semilla, guardar=None):
     rhos = [utilizacion_teorica(cfg, e) for e in estaciones]
     cuello = max(range(n), key=lambda i: rhos[i])
 
-    fig, (taller, curvas) = plt.subplots(2, 1, figsize=(14, 8.5), height_ratios=[3, 1.3])
-    fig.patch.set_facecolor("white")
+    plt.rcParams.update({"font.family": "DejaVu Sans", "text.color": TEXTO})
+    fig = plt.figure(figsize=(14, 8.6), facecolor="white")
+    taller = fig.add_axes((0.02, 0.33, 0.96, 0.58))
+    curvas = fig.add_axes((0.06, 0.06, 0.9, 0.2))
 
-    # --- Workshop floor: orders arrive on the left, warehouse on the right.
-    x_deposito = 2.4 + n * ANCHO_ESTACION
-    taller.set_xlim(-0.2, x_deposito + 2.6)
-    taller.set_ylim(-2.3, 4.1)
+    # --- Workshop: orders arrive on the left, warehouse on the right.
+    x_deposito = ANCHO_LLEGADA + n * ANCHO_ESTACION
+    ancho = x_deposito + ANCHO_DEPOSITO
+    y_min, y_max = -2.45, 4.4
+    taller.set_xlim(0, ancho)
+    taller.set_ylim(y_min, y_max)
     taller.set_aspect("equal")
     taller.axis("off")
-    taller.add_patch(matplotlib.patches.Rectangle((-0.2, -2.3), x_deposito + 2.8, 6.4,
-                                                  fc=PISO, ec="none", zorder=-5))
-    taller.text(1.0, 3.4, "Llegan pedidos", ha="center", fontsize=10, weight="bold")
-    taller.text(1.0, 3.0, f"{cfg['tasa_llegadas_h']:g} sillas/h en promedio",
-                ha="center", fontsize=8, color="#555555")
-    mostrar(dibujar_tablones(taller, 0.7, 1.4), True)
-    taller.annotate("", xy=(2.3, 1.6), xytext=(1.5, 1.6),
-                    arrowprops={"arrowstyle": "-|>", "color": "#888888", "lw": 1.5})
+    dibujar_fondo(taller, ancho, y_min, y_max)
 
-    operarios, en_banco, en_cola, sobrantes = [], [], [], []
+    taller.text(1.2, 3.55, "Pedidos", ha="center", fontsize=11, weight="bold")
+    taller.text(1.2, 3.18, f"llegan {cfg['tasa_llegadas_h']:g} sillas/h\nen promedio", ha="center",
+                va="top", fontsize=8.5, color=TEXTO_SUAVE)
+    dibujar_tarima(taller, 1.2, -1.75, ancho=1.6)  # same floor line as the stations' pallets
+    mostrar(dibujar_tablones(taller, 0.87, -1.65), True)
+    mostrar(dibujar_tablones(taller, 0.87, -1.29), True)
+
+    operarios, en_banco, en_cola, esperando = [], [], [], []
     for i, est in enumerate(estaciones):
-        cx = 2.4 + i * ANCHO_ESTACION + ANCHO_ESTACION / 2
+        cx = ANCHO_LLEGADA + i * ANCHO_ESTACION + ANCHO_ESTACION / 2
         es_cuello = i == cuello
-        color_cartel = "#c0392b" if es_cuello else "#34495e"
-
-        # Sign with the station data, taken from the scenario file.
-        cartel = f"{est['nombre']}\n{est['recursos']} operario{'s' if est['recursos'] > 1 else ''}"
-        cartel += f" · {est['tiempo_min']:g} min/silla\nocupación ρ = {rhos[i]:.0%}"
-        taller.text(cx, 3.15, cartel, ha="center", va="center", fontsize=9, color="white",
-                    bbox={"boxstyle": "round,pad=0.4", "fc": color_cartel, "ec": "none"})
+        plural = "s" if est["recursos"] > 1 else ""
+        dibujar_cartel(taller, cx, (est["nombre"],
+                                    f"{est['recursos']} operario{plural} · {est['tiempo_min']:g} min por silla"
+                                    f"\nocupación ρ = {rhos[i]:.0%}"),
+                       CUELLO if es_cuello else CARTEL)
         if es_cuello:
-            taller.text(cx, 3.95, "cuello de botella", ha="center", fontsize=8,
-                        color=color_cartel, weight="bold")
+            taller.text(cx, 2.72, "cuello de botella", ha="center", fontsize=9, weight="bold",
+                        color=CUELLO)
 
-        # Workbench: top and two legs.
-        _rect(taller, cx - 1.35, 1.05, 2.7, 0.22, "#8d5b2f", visible=True)
-        _rect(taller, cx - 1.25, 0.45, 0.12, 0.6, "#6e4523", visible=True)
-        _rect(taller, cx + 1.13, 0.45, 0.12, 0.6, "#6e4523", visible=True)
-
-        # Workers behind the bench, each with the piece they are working on.
+        # Workers stand behind the bench; the piece they work on rests on it.
         separacion = 2.4 / est["recursos"]
         personas, piezas = [], []
         for s in range(est["recursos"]):
             px = cx - 1.2 + separacion * (s + 0.5)
-            personas.append(dibujar_operario(taller, px, 1.3))
-            piezas.append(dibujar_material(taller, i, px - 0.3, 1.3))
+            personas.append(Operario(taller, px, 1.28))
+            piezas.append(dibujar_material(taller, i, px - 0.32, 1.25))
+        dibujar_mesa(taller, cx)
+        for pieza in piezas:  # keep the piece in front of the bench top
+            for parte in pieza:
+                parte.set_zorder(3)
         operarios.append(personas)
         en_banco.append(piezas)
 
-        # Material waiting on the floor in front of the bench.
+        # Material waiting on a pallet in front of the bench.
+        dibujar_tarima(taller, cx, -1.75)
         espera = []
         for k in range(COLUMNAS_COLA * FILAS_COLA):
             fila, col = divmod(k, COLUMNAS_COLA)
-            espera.append(dibujar_material(taller, i, cx - 1.2 + col * 0.85, -0.2 - fila * 0.9))
+            espera.append(dibujar_material(taller, i, cx - 1.22 + col * 0.86, -1.62 + fila * 0.72))
         en_cola.append(espera)
-        sobrantes.append(taller.text(cx, -2.15, "", ha="center", fontsize=9, color="#555555"))
+        esperando.append(taller.text(cx, -2.2, "", ha="center", fontsize=9, color=TEXTO_SUAVE))
 
-        flecha_x = cx + ANCHO_ESTACION / 2
-        taller.annotate("", xy=(flecha_x + 0.15, 1.6), xytext=(flecha_x - 0.15, 1.6),
-                        arrowprops={"arrowstyle": "-|>", "color": "#888888", "lw": 1.5})
+        # Flow arrow towards the next bench (or the warehouse).
+        fx = cx + ANCHO_ESTACION / 2
+        taller.annotate("", xy=(fx + 0.22, 1.9), xytext=(fx - 0.22, 1.9),
+                        arrowprops={"arrowstyle": "-|>", "color": TEXTO_SUAVE, "lw": 1.4})
+    taller.annotate("", xy=(ANCHO_LLEGADA + 0.22, 1.9), xytext=(ANCHO_LLEGADA - 0.22, 1.9),
+                    arrowprops={"arrowstyle": "-|>", "color": TEXTO_SUAVE, "lw": 1.4})
 
     # --- Warehouse with finished, lacquered chairs.
-    taller.text(x_deposito + 1.2, 3.4, "Depósito", ha="center", fontsize=10, weight="bold")
-    contador = taller.text(x_deposito + 1.2, 3.0, "", ha="center", fontsize=9, color="#555555")
+    xd = x_deposito + ANCHO_DEPOSITO / 2
+    taller.text(xd, 3.55, "Depósito", ha="center", fontsize=11, weight="bold")
+    contador = taller.text(xd, 3.18, "", ha="center", va="top", fontsize=8.5, color=TEXTO_SUAVE)
     deposito = []
     for k in range(COLUMNAS_DEPOSITO * FILAS_DEPOSITO):
         fila, col = divmod(k, COLUMNAS_DEPOSITO)
-        deposito.append(dibujar_silla(taller, x_deposito + col * 0.8, 1.9 - fila * 1.0,
+        deposito.append(dibujar_silla(taller, x_deposito + 0.25 + col * 0.78, 1.75 - fila * 1.05,
                                       MADERA_LAQUEADA, escala=0.85))
 
-    titulo = fig.suptitle("", fontsize=13, weight="bold")
+    # --- Header: scenario on the left, clock and totals on the right.
+    fig.text(0.03, 0.955, "Taller de sillas", fontsize=17, weight="bold")
+    fig.text(0.03, 0.925, cfg["nombre"], fontsize=10.5, color=TEXTO_SUAVE)
+    reloj = fig.text(0.97, 0.952, "", ha="right", fontsize=17, weight="bold")
+    totales = fig.text(0.97, 0.925, "", ha="right", fontsize=10.5, color=TEXTO_SUAVE)
 
     # --- Below: how many chairs wait at each station over time.
+    colores = ["#4f6d7a", "#8c7a5b", "#6f8f5a", "#7a5c8c", "#5c7a8c", "#8c5c6a"]
     horas_eje = [t / 60 for t in tiempos]
-    lineas = [curvas.plot([], [], label=nombre, lw=2.6 if i == cuello else 1.4)[0]
-              for i, nombre in enumerate(nombres)]
+    lineas = []
+    for i, nombre in enumerate(nombres):
+        color = CUELLO if i == cuello else colores[i % len(colores)]
+        lineas.append(curvas.plot([], [], color=color, lw=2.4 if i == cuello else 1.4,
+                                  label=nombre)[0])
     curvas.set_xlim(0, horas)
     curvas.set_ylim(0, max(max(estados[nb]["cola"]) for nb in nombres) + 1)
-    curvas.set_xlabel("Horas desde que abre el taller")
-    curvas.set_ylabel("Sillas esperando")
-    curvas.grid(alpha=0.3)
-    curvas.legend(loc="upper left", fontsize=8, ncol=n)
-    fig.tight_layout(rect=(0, 0, 1, 0.96))
+    curvas.set_title("Sillas esperando en cada estación", loc="left", fontsize=10.5,
+                     weight="bold", pad=8)
+    curvas.set_xlabel("horas desde que abre el taller", fontsize=9, color=TEXTO_SUAVE)
+    curvas.tick_params(colors=TEXTO_SUAVE, labelsize=8.5)
+    for lado in ("top", "right"):
+        curvas.spines[lado].set_visible(False)
+    for lado in ("left", "bottom"):
+        curvas.spines[lado].set_color("#c9c1b6")
+    curvas.grid(axis="y", color="#ece6dd")
+    curvas.legend(loc="upper left", fontsize=8.5, ncol=n, frameon=False)
 
     def dibujar(k):
         en_proceso = 0
@@ -229,21 +331,21 @@ def animar(cfg, horas, paso_min, semilla, guardar=None):
             cola = estados[nombre]["cola"][k]
             ocupados = estados[nombre]["ocupados"][k]
             en_proceso += cola + ocupados
-            for s, ((cuerpo, _), pieza) in enumerate(zip(operarios[i], en_banco[i])):
-                trabajando = s < ocupados
-                cuerpo.set_facecolor("#2e6da4" if trabajando else "#9aa3ab")  # blue = working
-                mostrar(pieza, trabajando)
+            for s, (persona, pieza) in enumerate(zip(operarios[i], en_banco[i])):
+                persona.trabajar(s < ocupados)
+                mostrar(pieza, s < ocupados)
             for j, material in enumerate(en_cola[i]):
                 mostrar(material, j < cola)
             sobra = cola - len(en_cola[i])
-            sobrantes[i].set_text(f"esperando: {cola}" + (f" (+{sobra} sin dibujar)" if sobra > 0 else ""))
+            texto = "nadie esperando" if cola == 0 else f"{cola} esperando"
+            esperando[i].set_text(texto + (f"  (+{sobra} fuera de la tarima)" if sobra > 0 else ""))
             lineas[i].set_data(horas_eje[:k + 1], estados[nombre]["cola"][:k + 1])
         for j, silla in enumerate(deposito):
             mostrar(silla, j < terminadas[k])
         contador.set_text(f"{terminadas[k]} sillas terminadas")
         h, m = divmod(int(tiempos[k]), 60)
-        titulo.set_text(f"Taller de sillas · {cfg['nombre']} · hora {h:02d}:{m:02d} · "
-                        f"{en_proceso} sillas en proceso")
+        reloj.set_text(f"hora {h:02d}:{m:02d}")
+        totales.set_text(f"{en_proceso} sillas en proceso · {terminadas[k]} terminadas")
 
     animacion = FuncAnimation(fig, dibujar, frames=len(tiempos), interval=150, repeat=False)
     if guardar:
