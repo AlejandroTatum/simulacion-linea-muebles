@@ -88,3 +88,15 @@ def test_config_missing_field_is_rejected(tmp_path):
     ruta.write_text(json.dumps(cfg))
     with pytest.raises(ValueError, match="tasa_llegadas_h"):
         cargar_config(ruta)
+
+
+@pytest.mark.parametrize("archivo, recursos, tiempo", [("e2.json", 2, 15), ("e3.json", 1, 10)])
+def test_report_scenarios_change_only_assembly(archivo, recursos, tiempo):
+    base = cargar_config(BASE)
+    cfg = cargar_config(BASE.parent / archivo)
+    ensamblaje = cfg["estaciones"][2]
+    assert (ensamblaje["nombre"], ensamblaje["recursos"], ensamblaje["tiempo_min"]) == ("Ensamblaje", recursos, tiempo)
+    resto = {k: v for k, v in cfg.items() if k not in ("nombre", "estaciones")}
+    assert resto == {k: v for k, v in base.items() if k not in ("nombre", "estaciones")}
+    assert [e for i, e in enumerate(cfg["estaciones"]) if i != 2] == \
+        [e for i, e in enumerate(base["estaciones"]) if i != 2]

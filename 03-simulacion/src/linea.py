@@ -3,6 +3,16 @@
 Chairs arrive as a Poisson process and visit every station in order. Each
 station has an unlimited FIFO queue and `recursos` servers with exponential
 service times. Internal time unit: minutes.
+
+How it fits together:
+  _llegadas         creates a new chair every exponential interarrival time
+  _silla            walks one chair through the stations (queue -> service)
+  Estacion          SimPy resource plus counters for the indicators
+  simular_replica   one run of duracion_h hours; returns its indicators
+  ejecutar          all replicas, plus the comparison against M/M/c theory
+
+Warm-up: the line starts empty, which is not its usual state, so everything
+before calentamiento_h is simulated but left out of the indicators.
 """
 
 import json
@@ -41,7 +51,12 @@ def cargar_config(ruta):
 
 
 class Estacion:
-    """A station plus time-weighted counters restricted to the measured window."""
+    """A station plus time-weighted counters restricted to the measured window.
+
+    Utilization and Lq are time averages: every time the queue or the number of
+    busy servers changes, the previous value is multiplied by how long it lasted
+    and added to an area. Area / window length gives the average.
+    """
 
     def __init__(self, env, nombre, recursos, tiempo_min, inicio):
         self.nombre = nombre
@@ -57,6 +72,7 @@ class Estacion:
         self.esperas = []
 
     def acumular(self, ahora):
+        """Add the current state's area since the last change (warm-up excluded)."""
         desde = max(self.t, self.inicio)
         if ahora > desde:
             self.area_cola += self.en_cola * (ahora - desde)
@@ -64,23 +80,27 @@ class Estacion:
         self.t = ahora
 
     def cambio(self, ahora, cola=0, ocupados=0):
+        """Record a change: +1/-1 chairs in queue and/or busy servers."""
         self.acumular(ahora)
         self.en_cola += cola
         self.ocupados += ocupados
 
 
 def _silla(env, estaciones, rng, inicio, registro):
+    """Life of one chair: queue and get processed at each station in order."""
     llegada = env.now
     for est in estaciones:
         entrada = env.now
-        est.cambio(env.now, cola=1)
+        est.cambio(env.now, cola=1)  # joins the queue
         with est.recurso.request() as turno:
-            yield turno
+            yield turno  # waits here until a worker is free (FIFO)
             est.cambio(env.now, cola=-1, ocupados=1)
-            if entrada >= inicio:
+            if entrada >= inicio:  # only chairs that queued after the warm-up count
                 est.esperas.append(env.now - entrada)
-            yield env.timeout(rng.exponential(est.tiempo_min))
+            yield env.timeout(rng.exponential(est.tiempo_min))  # being processed
             est.cambio(env.now, ocupados=-1)
+    # Throughput counts every chair finished in the measured window; flow time
+    # only chairs that also arrived after the warm-up, so it is not biased.
     if env.now >= inicio:
         registro["terminadas"] += 1
     if llegada >= inicio:
@@ -88,6 +108,7 @@ def _silla(env, estaciones, rng, inicio, registro):
 
 
 def _llegadas(env, estaciones, rng, inicio, registro, media_min):
+    """Poisson arrivals: exponential gaps with mean 60 / tasa_llegadas_h minutes."""
     while True:
         yield env.timeout(rng.exponential(media_min))
         env.process(_silla(env, estaciones, rng, inicio, registro))
@@ -109,7 +130,7 @@ def simular_replica(cfg, semilla):
 
     filas = []
     for est in estaciones:
-        est.acumular(fin)
+        est.acumular(fin)  # close the last open interval before averaging
         filas.append({
             "estacion": est.nombre,
             "recursos": est.recursos,
@@ -131,6 +152,7 @@ def _error_pct(simulado, teorico):
 
 def ejecutar(cfg):
     """Run every replica; return (per-replica rows, per-station summary)."""
+    # One independent, reproducible seed per replica, derived from the base seed.
     semillas = np.random.SeedSequence(cfg["semilla"]).generate_state(cfg["replicas"])
     filas = []
     for i, semilla in enumerate(semillas, start=1):
@@ -165,6 +187,9 @@ def ejecutar(cfg):
             "wq_min_media": datos["wq_min"].mean(),
             "wq_min_desv": datos["wq_min"].std(),
         }
+        # Theory assumes every station receives lambda, which holds while the
+        # stations before it are stable. An unstable station (rho >= 1) has no
+        # steady state, so its theory is left as NaN.
         try:
             teo = mmc(lam, mu, e["recursos"])
             fila.update({
