@@ -22,7 +22,7 @@ Después, desde `03-simulacion/`:
 ```bash
 cd 03-simulacion
 python src/main.py                 # línea base: escenarios/base.json (30 réplicas, ~4 s)
-python -m pytest                   # 35 pruebas
+python -m pytest                   # 38 pruebas
 ```
 
 Cada escenario genera tres archivos (en `03-simulacion/`, o en la carpeta que indique `--salida`):
@@ -45,7 +45,7 @@ En pantalla se ve la tabla por estación, la producción por hora, el tiempo tot
 - Sobre la mesa está la pieza que se procesa y, en el piso, el material que espera turno. La pieza cambia a lo largo de la línea: tablones → piezas cortadas → piezas lijadas → silla armada → silla laqueada.
 - A la derecha, el depósito acumula las sillas terminadas.
 - El cartel de cada estación muestra sus datos (operarios, minutos por silla, ρ) leídos del escenario. El de mayor ρ se marca en rojo como cuello de botella.
-- Abajo, un gráfico muestra cuántas sillas esperan en cada estación a lo largo del tiempo.
+- Abajo, un gráfico escalonado muestra cuántas sillas esperan en cada estación a lo largo del tiempo; el cuello de botella va en rojo con el área sombreada.
 
 ```bash
 python src/animacion.py                                       # línea base, 8 h, 5 min por cuadro
@@ -60,6 +60,8 @@ python src/animacion.py --guardar graficos/base.gif           # guarda un GIF en
 | `--paso` | Minutos simulados entre cuadros (por defecto 5). Más chico = más fluido y más lento. |
 | `--semilla` | Cambia la secuencia aleatoria (por defecto, la del escenario). |
 | `--guardar` | Archivo `.gif` donde guardar la animación. |
+
+La ventana se puede agrandar o achicar: el texto cambia de tamaño junto con el dibujo. Usa la tipografía Inter, incluida en `fuentes/` (licencia OFL), para que se vea igual en cualquier computadora.
 
 Es para ver y explicar la dinámica, no para medir: una sola réplica corta varía mucho. Los números del informe salen de `main.py`.
 

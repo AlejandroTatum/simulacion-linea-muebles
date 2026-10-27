@@ -19,6 +19,8 @@ import matplotlib
 
 from linea import cargar_config, simular_replica
 
+FUENTES = Path(__file__).resolve().parents[1] / "fuentes"  # Inter, bundled so it looks the same everywhere
+
 RAIZ = Path(__file__).resolve().parents[1]
 
 
@@ -198,16 +200,45 @@ def dibujar_cartel(ax, cx, texto, color):
                                          fc=color, ec="none"))
     cartel.set_path_effects(_sombra())
     titulo, detalle = texto
-    ax.text(cx, 3.6, titulo, ha="center", va="center", fontsize=11, weight="bold", color="white")
-    ax.text(cx, 3.2, detalle, ha="center", va="center", fontsize=8.5, color="#f2ece4")
+    textos = [ax.text(cx, 3.6, titulo, ha="center", va="center", fontsize=11, weight="semibold",
+                      color="white"),
+              ax.text(cx, 3.2, detalle, ha="center", va="center", fontsize=8.5, color="#f2ece4")]
+    return cartel, textos
 
 
 # ---------- Animation ----------
 
-def animar(cfg, horas, paso_min, semilla, guardar=None):
-    """Simulate `horas` hours from an empty workshop and animate it every `paso_min` minutes."""
+TAMANO_DISENO = (14, 8.6)  # inches; text sizes below are chosen for this window size
+FONDO = "#faf7f2"           # figure and chart background, the same warm white
+
+
+def _usar_fuente():
+    """Register the bundled Inter font; fall back to Matplotlib's default if it is missing."""
+    from matplotlib import font_manager
+    archivos = sorted(FUENTES.glob("*.ttf"))
+    for archivo in archivos:
+        font_manager.fontManager.addfont(str(archivo))
+    familia = "Inter" if archivos else "DejaVu Sans"
+    matplotlib.rcParams.update({"font.family": familia, "text.color": TEXTO})
+
+
+class Escena:
+    """Everything `animar` needs: the figure, the per-frame update and the text rescaler."""
+
+    def __init__(self, figura, dibujar, tiempos, carteles, ajustar_texto):
+        self.figura = figura
+        self.dibujar = dibujar            # dibujar(k) paints frame k
+        self.tiempos = tiempos            # simulated minute of each frame
+        self.carteles = carteles          # [(sign patch, [title, detail])], used by the tests
+        self.ajustar_texto = ajustar_texto
+
+
+def armar(cfg, horas, paso_min, semilla):
+    """Simulate `horas` hours from an empty workshop and build the scene to animate."""
     import matplotlib.pyplot as plt
-    from matplotlib.animation import FuncAnimation, PillowWriter
+    from matplotlib.patches import Patch
+    from matplotlib.text import Text
+    from matplotlib.ticker import FuncFormatter, MaxNLocator, MultipleLocator
 
     # The animation shows the workshop from opening time, so no warm-up is discarded.
     corrida = dict(cfg, duracion_h=horas, calentamiento_h=0)
@@ -223,10 +254,10 @@ def animar(cfg, horas, paso_min, semilla, guardar=None):
     rhos = [utilizacion_teorica(cfg, e) for e in estaciones]
     cuello = max(range(n), key=lambda i: rhos[i])
 
-    plt.rcParams.update({"font.family": "DejaVu Sans", "text.color": TEXTO})
-    fig = plt.figure(figsize=(14, 8.6), facecolor="white")
-    taller = fig.add_axes((0.02, 0.33, 0.96, 0.58))
-    curvas = fig.add_axes((0.06, 0.06, 0.9, 0.2))
+    _usar_fuente()
+    fig = plt.figure(figsize=TAMANO_DISENO, facecolor=FONDO)
+    taller = fig.add_axes((0.02, 0.31, 0.96, 0.57))
+    curvas = fig.add_axes((0.06, 0.07, 0.78, 0.17), facecolor=FONDO)
 
     # --- Workshop: orders arrive on the left, warehouse on the right.
     x_deposito = ANCHO_LLEGADA + n * ANCHO_ESTACION
@@ -238,24 +269,25 @@ def animar(cfg, horas, paso_min, semilla, guardar=None):
     taller.axis("off")
     dibujar_fondo(taller, ancho, y_min, y_max)
 
-    taller.text(1.2, 3.55, "Pedidos", ha="center", fontsize=11, weight="bold")
+    taller.text(1.2, 3.55, "Pedidos", ha="center", fontsize=11, weight="semibold")
     taller.text(1.2, 3.18, f"llegan {cfg['tasa_llegadas_h']:g} sillas/h\nen promedio", ha="center",
                 va="top", fontsize=8.5, color=TEXTO_SUAVE)
     dibujar_tarima(taller, 1.2, -1.75, ancho=1.6)  # same floor line as the stations' pallets
     mostrar(dibujar_tablones(taller, 0.87, -1.65), True)
     mostrar(dibujar_tablones(taller, 0.87, -1.29), True)
 
-    operarios, en_banco, en_cola, esperando = [], [], [], []
+    operarios, en_banco, en_cola, esperando, carteles = [], [], [], [], []
     for i, est in enumerate(estaciones):
         cx = ANCHO_LLEGADA + i * ANCHO_ESTACION + ANCHO_ESTACION / 2
         es_cuello = i == cuello
         plural = "s" if est["recursos"] > 1 else ""
-        dibujar_cartel(taller, cx, (est["nombre"],
-                                    f"{est['recursos']} operario{plural} · {est['tiempo_min']:g} min por silla"
-                                    f"\nocupación ρ = {rhos[i]:.0%}"),
-                       CUELLO if es_cuello else CARTEL)
+        carteles.append(dibujar_cartel(
+            taller, cx,
+            (est["nombre"], f"{est['recursos']} operario{plural} · {est['tiempo_min']:g} min/silla"
+                            f"\nocupación ρ = {rhos[i]:.0%}"),
+            CUELLO if es_cuello else CARTEL))
         if es_cuello:
-            taller.text(cx, 2.72, "cuello de botella", ha="center", fontsize=9, weight="bold",
+            taller.text(cx, 2.72, "cuello de botella", ha="center", fontsize=9, weight="semibold",
                         color=CUELLO)
 
         # Workers stand behind the bench; the piece they work on rests on it.
@@ -290,7 +322,7 @@ def animar(cfg, horas, paso_min, semilla, guardar=None):
 
     # --- Warehouse with finished, lacquered chairs.
     xd = x_deposito + ANCHO_DEPOSITO / 2
-    taller.text(xd, 3.55, "Depósito", ha="center", fontsize=11, weight="bold")
+    taller.text(xd, 3.55, "Depósito", ha="center", fontsize=11, weight="semibold")
     contador = taller.text(xd, 3.18, "", ha="center", va="top", fontsize=8.5, color=TEXTO_SUAVE)
     deposito = []
     for k in range(COLUMNAS_DEPOSITO * FILAS_DEPOSITO):
@@ -298,32 +330,56 @@ def animar(cfg, horas, paso_min, semilla, guardar=None):
         deposito.append(dibujar_silla(taller, x_deposito + 0.25 + col * 0.78, 1.75 - fila * 1.05,
                                       MADERA_LAQUEADA, escala=0.85))
 
-    # --- Header: scenario on the left, clock and totals on the right.
-    fig.text(0.03, 0.955, "Taller de sillas", fontsize=17, weight="bold")
-    fig.text(0.03, 0.925, cfg["nombre"], fontsize=10.5, color=TEXTO_SUAVE)
-    reloj = fig.text(0.97, 0.952, "", ha="right", fontsize=17, weight="bold")
-    totales = fig.text(0.97, 0.925, "", ha="right", fontsize=10.5, color=TEXTO_SUAVE)
+    # --- Header: scenario on the left, colour key in the middle, clock and totals on the right.
+    fig.text(0.03, 0.952, "Taller de sillas", fontsize=17, weight="semibold")
+    fig.text(0.03, 0.915, cfg["nombre"], fontsize=10.5, color=TEXTO_SUAVE)
+    reloj = fig.text(0.97, 0.952, "", ha="right", fontsize=17, weight="semibold")
+    totales = fig.text(0.97, 0.915, "", ha="right", fontsize=10.5, color=TEXTO_SUAVE)
+    claves = [Patch(color=TRABAJANDO, label="operario trabajando"),
+              Patch(color=LIBRE, label="operario esperando material"),
+              Patch(color=CUELLO, label="cuello de botella")]
+    fig.legend(handles=claves, loc="center", bbox_to_anchor=(0.5, 0.93), ncol=3, frameon=False,
+               fontsize=9.5, handlelength=1.1, handleheight=1.1, columnspacing=1.8)
 
-    # --- Below: how many chairs wait at each station over time.
-    colores = ["#4f6d7a", "#8c7a5b", "#6f8f5a", "#7a5c8c", "#5c7a8c", "#8c5c6a"]
+    # --- Below: chairs waiting at each station. Queues are whole numbers, so steps, not slopes.
+    colores = ["#4f6d7a", "#a08455", "#6f8f5a", "#7a5c8c", "#5c7a8c", "#8c5c6a"]
     horas_eje = [t / 60 for t in tiempos]
     lineas = []
     for i, nombre in enumerate(nombres):
-        color = CUELLO if i == cuello else colores[i % len(colores)]
-        lineas.append(curvas.plot([], [], color=color, lw=2.4 if i == cuello else 1.4,
-                                  label=nombre)[0])
+        es_cuello = i == cuello
+        lineas.append(curvas.plot([], [], drawstyle="steps-post", label=nombre,
+                                  color=CUELLO if es_cuello else colores[i % len(colores)],
+                                  lw=2.4 if es_cuello else 1.5, zorder=3 if es_cuello else 2)[0])
+    relleno = [None]  # area under the bottleneck queue, redrawn every frame
     curvas.set_xlim(0, horas)
     curvas.set_ylim(0, max(max(estados[nb]["cola"]) for nb in nombres) + 1)
-    curvas.set_title("Sillas esperando en cada estación", loc="left", fontsize=10.5,
-                     weight="bold", pad=8)
-    curvas.set_xlabel("horas desde que abre el taller", fontsize=9, color=TEXTO_SUAVE)
-    curvas.tick_params(colors=TEXTO_SUAVE, labelsize=8.5)
-    for lado in ("top", "right"):
+    curvas.yaxis.set_major_locator(MaxNLocator(integer=True, nbins=5))
+    if horas <= 24:
+        curvas.xaxis.set_major_locator(MultipleLocator(1 if horas <= 12 else 2))
+    curvas.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x:g} h"))
+    curvas.set_title("Sillas esperando en cada estación", loc="left", fontsize=11, weight="semibold",
+                     pad=10)
+    curvas.tick_params(colors=TEXTO_SUAVE, length=0, labelsize=8.5)
+    for lado in ("top", "right", "left"):
         curvas.spines[lado].set_visible(False)
-    for lado in ("left", "bottom"):
-        curvas.spines[lado].set_color("#c9c1b6")
-    curvas.grid(axis="y", color="#ece6dd")
-    curvas.legend(loc="upper left", fontsize=8.5, ncol=n, frameon=False)
+    curvas.spines["bottom"].set_color("#d9d0c3")
+    curvas.grid(axis="y", color="#ebe3d7", lw=0.8)
+    curvas.set_axisbelow(True)
+    curvas.legend(loc="upper left", bbox_to_anchor=(1.02, 1.05), fontsize=9, frameon=False,
+                  title="Estación", title_fontsize=9, alignment="left")
+
+    # Every text keeps its design size at TAMANO_DISENO and scales with the window,
+    # so a smaller window shrinks text together with the drawing instead of overflowing.
+    bases = [(t, t.get_fontsize()) for t in fig.findobj(Text)]
+
+    def ajustar_texto(_evento=None):
+        ancho_pulg, alto_pulg = fig.get_size_inches()
+        factor = min(ancho_pulg / TAMANO_DISENO[0], alto_pulg / TAMANO_DISENO[1])
+        for texto, base in bases:
+            texto.set_fontsize(base * factor)
+        curvas.tick_params(labelsize=8.5 * factor)
+
+    fig.canvas.mpl_connect("resize_event", ajustar_texto)
 
     def dibujar(k):
         en_proceso = 0
@@ -338,8 +394,12 @@ def animar(cfg, horas, paso_min, semilla, guardar=None):
                 mostrar(material, j < cola)
             sobra = cola - len(en_cola[i])
             texto = "nadie esperando" if cola == 0 else f"{cola} esperando"
-            esperando[i].set_text(texto + (f"  (+{sobra} fuera de la tarima)" if sobra > 0 else ""))
+            esperando[i].set_text(texto + (f" (+{sobra} fuera)" if sobra > 0 else ""))
             lineas[i].set_data(horas_eje[:k + 1], estados[nombre]["cola"][:k + 1])
+        if relleno[0] is not None:
+            relleno[0].remove()
+        relleno[0] = curvas.fill_between(horas_eje[:k + 1], estados[nombres[cuello]]["cola"][:k + 1],
+                                         step="post", color=CUELLO, alpha=0.1, lw=0, zorder=1)
         for j, silla in enumerate(deposito):
             mostrar(silla, j < terminadas[k])
         contador.set_text(f"{terminadas[k]} sillas terminadas")
@@ -347,11 +407,21 @@ def animar(cfg, horas, paso_min, semilla, guardar=None):
         reloj.set_text(f"hora {h:02d}:{m:02d}")
         totales.set_text(f"{en_proceso} sillas en proceso · {terminadas[k]} terminadas")
 
-    animacion = FuncAnimation(fig, dibujar, frames=len(tiempos), interval=150, repeat=False)
+    return Escena(fig, dibujar, tiempos, carteles, ajustar_texto)
+
+
+def animar(cfg, horas, paso_min, semilla, guardar=None):
+    """Animate the workshop every `paso_min` minutes; save a GIF or open a window."""
+    import matplotlib.pyplot as plt
+    from matplotlib.animation import FuncAnimation, PillowWriter
+
+    escena = armar(cfg, horas, paso_min, semilla)
+    animacion = FuncAnimation(escena.figura, escena.dibujar, frames=len(escena.tiempos),
+                              interval=150, repeat=False)
     if guardar:
         guardar.parent.mkdir(parents=True, exist_ok=True)
         animacion.save(guardar, writer=PillowWriter(fps=8))
-        plt.close(fig)
+        plt.close(escena.figura)
     else:
         plt.show()
 
