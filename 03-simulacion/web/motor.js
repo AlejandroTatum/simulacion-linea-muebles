@@ -8,6 +8,9 @@
 (function (raiz) {
   "use strict";
 
+  /** Coefficient of variation of the "more regular" lognormal service times. */
+  const CV_LOGNORMAL = 0.3;
+
   const ESCENARIOS = {
     E1: {
       nombre: "E1 · Línea base",
@@ -102,7 +105,7 @@
     constructor(cfg, semilla, calentamientoMin = 0) {
       this.cfg = cfg;
       this.rng = generador(semilla);
-      this.inicio = calentamientoMin;
+      this.finCalentamiento = calentamientoMin;
       this.ahora = 0;
       this.agenda = new Agenda();
       this.siguienteId = 1;
@@ -131,12 +134,12 @@
 
     muestraServicio(est) {
       return this.cfg.distribucion === "lognormal"
-        ? this.rng.lognormal(est.tiempo_min, 0.3)
+        ? this.rng.lognormal(est.tiempo_min, CV_LOGNORMAL)
         : this.rng.exponencial(est.tiempo_min);
     }
 
     acumular(est, t) {
-      const desde = Math.max(est.t, this.inicio);
+      const desde = Math.max(est.t, this.finCalentamiento);
       if (t > desde) {
         const ocupados = est.servidores.reduce((s, x) => s + (x ? 1 : 0), 0);
         est.areaCola += est.cola.length * (t - desde);
@@ -158,7 +161,7 @@
     atender(silla, i, servidor) {
       const est = this.estaciones[i];
       const espera = this.ahora - silla.entradaCola;
-      if (silla.entradaCola >= this.inicio) {
+      if (silla.entradaCola >= this.finCalentamiento) {
         est.esperas.suma += espera;
         est.esperas.n += 1;
       }
@@ -189,8 +192,8 @@
         this.entrar(silla, ev.estacion + 1);
       } else {
         this.terminadas += 1;
-        if (this.ahora >= this.inicio) this.terminadasMedidas += 1;
-        if (silla.llegada >= this.inicio) {
+        if (this.ahora >= this.finCalentamiento) this.terminadasMedidas += 1;
+        if (silla.llegada >= this.finCalentamiento) {
           this.flujos.suma += this.ahora - silla.llegada;
           this.flujos.n += 1;
         }
@@ -226,7 +229,7 @@
     }
 
     metricas() {
-      const ventana = this.ahora - this.inicio;
+      const ventana = this.ahora - this.finCalentamiento;
       const filas = this.estaciones.map((est) => {
         this.acumular(est, this.ahora);
         return {
@@ -270,7 +273,18 @@
     return { utilizacion: rho, p0, lq, wq_min: wq * 60, l: lam * w, w_min: w * 60 };
   }
 
-  const api = { Linea, simular, mmc, ESCENARIOS, generador };
+  /** Kingman (G/G/1) approximation of the queue wait, in minutes, with Poisson arrivals. */
+  function kingmanWq(rho, tiempoMin, cvServicio) {
+    return ((1 + cvServicio ** 2) / 2) * (rho / (1 - rho)) * tiempoMin;
+  }
+
+  /** First sample time at or after the clock; step mode can leave older ones behind. */
+  function siguienteMuestra(prox, ahora, paso) {
+    if (prox >= ahora) return prox;
+    return prox + Math.ceil((ahora - prox) / paso) * paso;
+  }
+
+  const api = { Linea, simular, mmc, ESCENARIOS, generador, CV_LOGNORMAL, kingmanWq, siguienteMuestra };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else raiz.Motor = api;
 })(typeof window !== "undefined" ? window : globalThis);

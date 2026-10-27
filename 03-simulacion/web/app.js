@@ -106,7 +106,7 @@
     const L = S.linea;
     // Step mode can move the clock past pending samples; skip them instead of
     // recording the current state under a stale time.
-    while (S.proxMuestra < L.ahora) S.proxMuestra += PASO_MUESTRA;
+    S.proxMuestra = M.siguienteMuestra(S.proxMuestra, L.ahora, PASO_MUESTRA);
     while (S.proxMuestra <= hasta) {
       L.avanzarHasta(S.proxMuestra);
       muestrear();
@@ -553,7 +553,9 @@
     const t = (clave) => calcularTeoria(M.ESCENARIOS[clave]);
     const e1 = t("E1"), e2 = t("E2"), e3 = t("E3"), sat = t("SAT");
     const nombre = (T) => M.ESCENARIOS.E1.estaciones[T.cuello].nombre;
-    const kingman = ((1 + 0.3 ** 2) / 2) * (0.75 / 0.25) * 15;
+    const ens = M.ESCENARIOS.E1.estaciones[2], ensE1 = e1.estaciones[2];
+    const kingman = M.kingmanWq(ensE1.rho, ens.tiempo_min, M.CV_LOGNORMAL);
+    const lamSat = M.ESCENARIOS.SAT.tasa_llegadas_h;
     const lista = [
       { clave: "E1", titulo: "E1 · ¿Dónde se forma la cola?",
         texto: "Corré la línea base y mirá las cuatro colas. Todas las estaciones tienen la misma λ; cambia solo el tiempo de proceso.",
@@ -564,12 +566,12 @@
       { clave: "E3", titulo: "E3 · Ensamblaje más rápido",
         texto: "En vez de contratar, mejoramos el método: ensamblar en 10 min en lugar de 15.",
         espera: `ρ de ensamblaje pasa a ${pct(e3.estaciones[2].rho, 0)} y su espera a ${fmt(e3.estaciones[2].teo.wq_min, 0)} min. Tiempo en la línea: ${fmt(e3.W, 0)} min. Compará con E2: ¿cuál conviene?` },
-      { clave: "SAT", titulo: "Saturación · λ = 4,5 sillas/h",
+      { clave: "SAT", titulo: `Saturación · λ = ${fmt(lamSat, 1)} sillas/h`,
         texto: "Llegan más pedidos de los que ensamblaje puede hacer. Mirá el gráfico de WIP durante varias horas.",
-        espera: `Ensamblaje queda con ρ = ${fmt(sat.estaciones[2].rho, 3)} &gt; 1: su cola crece sin límite (~${fmt(4.5 - sat.estaciones[2].C, 1)} sillas más por hora) y la producción se clava en ${fmt(sat.throughput, 0)} sillas/h.` },
+        espera: `Ensamblaje queda con ρ = ${fmt(sat.estaciones[2].rho, 3)} &gt; 1: su cola crece sin límite (~${fmt(lamSat - sat.estaciones[2].C, 1)} sillas más por hora) y la producción se clava en ${fmt(sat.throughput, 0)} sillas/h.` },
       { clave: "E1", dist: "lognormal", titulo: "Variabilidad · mismo ρ, menos cola",
-        texto: "Mismos tiempos medios, pero procesos más regulares (CV = 0,3), como en un taller con métodos estandarizados.",
-        espera: `ρ no cambia (75 %), pero la espera en ensamblaje baja hacia ~${fmt(kingman, 0)} min (aproximación de Kingman) en lugar de 45. La cola nace de la variabilidad, no solo de la carga.` },
+        texto: "Mismos tiempos medios, pero procesos más regulares (CV = ${fmt(M.CV_LOGNORMAL, 1)}), como en un taller con métodos estandarizados.",
+        espera: `ρ no cambia (${pct(ensE1.rho, 0)}), pero la espera en ensamblaje baja hacia ~${fmt(kingman, 0)} min (aproximación de Kingman) en lugar de ${fmt(ensE1.teo.wq_min, 0)}. La cola nace de la variabilidad, no solo de la carga.` },
     ];
     $("#experimentos").innerHTML = lista.map((x, i) => `
       <article class="experimento"><h3>${x.titulo}</h3><p>${x.texto}</p>
@@ -671,11 +673,14 @@
 
     document.querySelectorAll("[data-escenario]").forEach((b) =>
       b.addEventListener("click", () => cargarEscenario(b.dataset.escenario)));
+    // Dragging only previews the value; the running line keeps its λ until release.
     $("#lambda").addEventListener("input", (ev) => {
-      S.cfg.tasa_llegadas_h = Number(ev.target.value);
-      $("#lambda-txt").textContent = `${fmt(S.cfg.tasa_llegadas_h, 1)} sillas/h`;
+      $("#lambda-txt").textContent = `${fmt(Number(ev.target.value), 1)} sillas/h`;
     });
-    $("#lambda").addEventListener("change", personalizar);
+    $("#lambda").addEventListener("change", (ev) => {
+      S.cfg.tasa_llegadas_h = Number(ev.target.value);
+      personalizar();
+    });
     document.querySelectorAll('input[name="dist"]').forEach((r) => r.addEventListener("change", () => {
       S.cfg.distribucion = r.value;
       personalizar();
@@ -700,6 +705,7 @@
   conectar();
   construirAjustes();
   construirEtapas();
+  $("#cv-txt").textContent = fmt(M.CV_LOGNORMAL, 1);
   construirExperimentos();
   construirPreguntas();
   reiniciar();

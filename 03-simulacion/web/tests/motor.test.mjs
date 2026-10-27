@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { Linea, mmc, simular, ESCENARIOS } = require("../motor.js");
+const { Linea, mmc, simular, ESCENARIOS, CV_LOGNORMAL, kingmanWq, siguienteMuestra } = require("../motor.js");
 
 const cerca = (real, esperado, tolPct) =>
   Math.abs(real - esperado) / esperado * 100 <= tolPct;
@@ -73,8 +73,30 @@ test("avanzar a un tiempo pasado después de un paso no retrocede el reloj", () 
   linea.siguienteEvento();
   linea.siguienteEvento();
   const t = linea.ahora;
+  assert.ok(t > 0, "two steps must move the clock past zero");
   linea.avanzarHasta(t / 2);
   assert.equal(linea.ahora, t);
   linea.avanzarHasta(t + 60);
   assert.equal(linea.ahora, t + 60);
+});
+
+test("kingmanWq aproxima la espera con el CV lognormal compartido", () => {
+  assert.equal(CV_LOGNORMAL, 0.3);
+  // Assembly in E1: rho = 0.75, 15 min -> (1 + 0.09) / 2 * 3 * 15
+  assert.ok(Math.abs(kingmanWq(0.75, 15, CV_LOGNORMAL) - 24.525) < 1e-9);
+  // CV = 1 recovers M/M/1 (45 min)
+  assert.ok(Math.abs(kingmanWq(0.75, 15, 1) - mmc(3, 4, 1).wq_min) < 1e-9);
+});
+
+test("siguienteMuestra salta los puntos de muestreo que el reloj ya pasó", () => {
+  assert.equal(siguienteMuestra(0, 0, 10), 0);
+  assert.equal(siguienteMuestra(20, 5, 10), 20);
+  assert.equal(siguienteMuestra(10, 10, 10), 10);
+  assert.equal(siguienteMuestra(10, 37.5, 10), 40);
+});
+
+test("el calentamiento se expone como finCalentamiento", () => {
+  const linea = new Linea(ESCENARIOS.E1, 1, 120);
+  assert.equal(linea.finCalentamiento, 120);
+  assert.equal(linea.inicio, undefined);
 });
