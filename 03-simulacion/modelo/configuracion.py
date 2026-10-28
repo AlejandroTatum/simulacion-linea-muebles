@@ -1,4 +1,9 @@
-"""Carga y validación de los escenarios JSON."""
+"""Carga y validación de los escenarios JSON.
+
+Los valores de la línea (λ, operarios y tiempos de cada estación, réplicas, duración,
+calentamiento y semilla) no se cambian aquí: están en escenarios/*.json o se escriben en
+la ventana de python panel.py. Este módulo solo los lee y revisa que sean válidos.
+"""
 
 import json
 import math

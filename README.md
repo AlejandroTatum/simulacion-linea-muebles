@@ -39,6 +39,15 @@ python -m pytest
 Si `python` no existe, usá `python3` o el Python del entorno virtual:
 `.venv/bin/python` en Linux/macOS y `.venv\Scripts\python.exe` en Windows.
 
+### Cambiar los valores (λ, operarios, tiempos)
+
+Hay dos formas, y ninguna obliga a tocar el código Python:
+
+- **Ventana:** `python panel.py` abre casillas para cada valor y los botones Simular,
+  Animar, Guardar escenario y Restaurar.
+- **Archivo:** editar o copiar `03-simulacion/escenarios/base.json`. La guía de cada campo
+  está en [`03-simulacion/escenarios/README.md`](03-simulacion/escenarios/README.md).
+
 Para generar la animación como GIF, sin abrir ventana:
 
 ```bash
@@ -57,7 +66,7 @@ python animacion.py --guardar graficos/base.gif
 |---|---|:---:|
 | Investigación y marco teórico | [`01-investigacion/`](01-investigacion/) | ✅ Redactado en el informe (secciones 4 y 6.4.2) |
 | Modelo matemático | [`02-modelo/`](02-modelo/) | ✅ Redactado en el informe (secciones 6.4.4 y 6.4.5) |
-| Programación y simulación | [`03-simulacion/`](03-simulacion/) | ✅ Terminado: cumple las secciones 6.4 y 6.5 del informe; 69 pruebas pasan |
+| Programación y simulación | [`03-simulacion/`](03-simulacion/) | ✅ Terminado: cumple las secciones 6.4 y 6.5 del informe, con panel para cambiar valores; 81 pruebas pasan |
 | Experimentos (E1, E2, E3) | [`04-experimentos/`](04-experimentos/) | ✅ Resultados generados |
 | Informe final (formato IEEE) | [`05-informe/`](05-informe/) | En redacción: faltan resumen, 7.2, discusión, conclusiones, recomendaciones y declaratoria de IA |
 

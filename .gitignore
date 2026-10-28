@@ -6,3 +6,6 @@ venv/
 .ipynb_checkpoints/
 ~$*
 .DS_Store
+
+# Escenario guardado desde el panel
+03-simulacion/escenarios/personalizado.json
