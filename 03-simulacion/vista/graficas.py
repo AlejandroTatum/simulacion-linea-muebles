@@ -199,7 +199,7 @@ def graficar_utilizacion_cola(resumen, ruta_png):
                    color=colores, label="Simulación")
     if "cola_utilizacion_teorica" in resumen:
         eje_tiempo.bar(x + ancho / 2, resumen["cola_utilizacion_teorica"] * 100, ancho,
-                       color=NARANJA, label="Teoría M/M/c")
+                       color=NARANJA, label="Teoría M/M/1")
     eje_tiempo.set_ylabel("Tiempo con cola (%)")
     eje_tiempo.set_title("Utilización de la cola", fontsize=11, weight="semibold")
     eje_tiempo.set_ylim(0, 105)
@@ -340,40 +340,47 @@ def graficar_flujo(resumen, escenario, ruta_png):
 
 
 def graficar_escenarios(resultados, ruta_png):
-    """Compara producción, flujo y utilización del cuello entre escenarios."""
-    nombres = [resultado["nombre"] for resultado in resultados]
-    x = np.arange(len(resultados))
-    produccion = [resultado["linea"]["throughput_h"] for resultado in resultados]
-    flujo = [resultado["linea"]["flujo_min"] for resultado in resultados]
-    utilizacion = []
-    for resultado in resultados:
-        resumen = resultado["resumen"]
-        fila = resumen.loc[resumen["estacion"] == resultado["cuello"]].iloc[0]
-        utilizacion.append(fila["utilizacion_media"] * 100)
+    """Compara ensamblaje y acabado entre escenarios: simulación frente a teoría."""
+    etiquetas = [resultado["escenario"]["nombre"].split(" - ")[0]
+                 for resultado in resultados]
+    estaciones = [nombre for nombre in ("Ensamblaje", "Acabado")
+                  if all(nombre in set(resultado["resumen"]["estacion"])
+                         for resultado in resultados)]
+    if not estaciones:
+        estaciones = list(resultados[0]["resumen"]["estacion"])
 
-    figura, ejes = plt.subplots(1, 3, figsize=(13, 4.2))
-    datos = [
-        (produccion, "Producción", "Sillas por hora", "{:.2f}"),
-        (flujo, "Tiempo total de flujo", "Minutos por silla", "{:.1f}"),
-        (utilizacion, "Utilización del cuello", "ρ (%)", "{:.1f}"),
+    metricas = [
+        ("utilizacion_media", "utilizacion_teorica", 100.0,
+         "ρ (%)", "Utilización"),
+        ("lq_media", "lq_teorico", 1.0, "Lq (sillas)", "Longitud de la cola"),
+        ("wq_min_media", "wq_min_teorico", 1.0, "Wq (min)", "Tiempo de espera"),
     ]
     colores = [AZUL, VERDE, NARANJA, ROJO, "#7a5c8c", "#5c7a8c"]
+    figura, ejes = plt.subplots(1, 3, figsize=(14, 4.6))
+    x = np.arange(len(estaciones))
+    ancho = 0.8 / max(len(resultados), 1)
 
-    for eje, (valores, titulo, etiqueta, formato) in zip(ejes, datos):
-        barras = eje.bar(x, valores, width=0.6,
-                         color=[colores[i % len(colores)] for i in range(len(valores))])
-        for barra, valor in zip(barras, valores):
-            eje.text(barra.get_x() + barra.get_width() / 2, valor, formato.format(valor),
-                     ha="center", va="bottom", fontsize=9)
-        eje.set_xticks(x, nombres, rotation=15)
+    for eje, (columna_sim, columna_teo, factor, etiqueta, titulo) in zip(ejes, metricas):
+        for i, resultado in enumerate(resultados):
+            datos = (resultado["resumen"].set_index("estacion")
+                     .reindex(estaciones))
+            posicion = x + (i - (len(resultados) - 1) / 2) * ancho
+            eje.bar(posicion, datos[columna_sim] * factor, ancho * 0.92,
+                    color=colores[i % len(colores)], label=etiquetas[i])
+            eje.plot(posicion, datos[columna_teo] * factor, "D", color="#2b2622",
+                     markersize=4.5, linestyle="none", zorder=3,
+                     label="Teoría M/M/1" if i == 0 else None)
+
+        eje.set_xticks(x, estaciones)
         eje.set_title(titulo, fontsize=11, weight="semibold")
         eje.set_ylabel(etiqueta)
         _estilo_eje(eje)
 
-    figura.suptitle("Comparación de escenarios", fontsize=13, weight="semibold")
+    ejes[0].legend(frameon=False, fontsize=8.5)
+    figura.suptitle("Ensamblaje y acabado en cada escenario", fontsize=13, weight="semibold")
     cuellos = [resultado["cuello"] for resultado in resultados]
     nota = "Cuello de botella: " + ", ".join(
-        f"{nombre} = {cuello}" for nombre, cuello in zip(nombres, cuellos))
+        f"{etiqueta} = {cuello}" for etiqueta, cuello in zip(etiquetas, cuellos))
     figura.text(0.5, 0.01, nota, ha="center", fontsize=8.5, color=GRIS)
     figura.tight_layout(rect=(0, 0.05, 1, 1))
     _guardar(figura, ruta_png)
