@@ -53,7 +53,7 @@ python animacion.py --guardar graficos/base.gif
 | Investigación y marco teórico | [`01-investigacion/`](01-investigacion/) | Pendiente de subir |
 | Modelo matemático | [`02-modelo/`](02-modelo/) | Pendiente de subir |
 | Programación y simulación | [`03-simulacion/`](03-simulacion/) | ✅ Terminado |
-| Experimentos y análisis (E1, E2, E3) | [`04-experimentos/`](04-experimentos/) | Pendiente |
+| Experimentos y análisis (E1, E2, E3) | [`04-experimentos/`](04-experimentos/) | Resultados listos; análisis pendiente |
 | Informe final (formato IEEE) | [`05-informe/`](05-informe/) | Pendiente de subir |
 
 La coordinación del grupo se hizo fuera de GitHub; este repositorio guarda solo el código,
