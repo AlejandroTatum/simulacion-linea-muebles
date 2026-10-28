@@ -2,6 +2,11 @@
 
 Proyecto grupal: simulación de eventos discretos de una línea de fabricación de sillas (corte → lijado → ensamblaje → acabado), con modelo matemático, programa en Python, experimentos y un informe académico en formato IEEE.
 
+**Tema:** identificación de cuellos de botella en una línea de producción de muebles de madera
+mediante simulación de eventos discretos en Python.
+
+**Grupo 10:** Victor Roa, Francis Valdiviezo, Cael Soto, Jimmy Ontaneda y Alejandro Padilla.
+
 ---
 
 ## Inicio rápido
@@ -50,11 +55,11 @@ python animacion.py --guardar graficos/base.gif
 
 | Parte | Carpeta | Estado |
 |---|---|:---:|
-| Investigación y marco teórico | [`01-investigacion/`](01-investigacion/) | Pendiente de subir |
-| Modelo matemático | [`02-modelo/`](02-modelo/) | Pendiente de subir |
-| Programación y simulación | [`03-simulacion/`](03-simulacion/) | ✅ Terminado |
-| Experimentos y análisis (E1, E2, E3) | [`04-experimentos/`](04-experimentos/) | Resultados listos; análisis pendiente |
-| Informe final (formato IEEE) | [`05-informe/`](05-informe/) | Pendiente de subir |
+| Investigación y marco teórico | [`01-investigacion/`](01-investigacion/) | ✅ Redactado en el informe (secciones 4 y 6.4.2) |
+| Modelo matemático | [`02-modelo/`](02-modelo/) | ✅ Redactado en el informe (secciones 6.4.4 y 6.4.5) |
+| Programación y simulación | [`03-simulacion/`](03-simulacion/) | ✅ Terminado: cumple las secciones 6.4 y 6.5 del informe; 69 pruebas pasan |
+| Experimentos (E1, E2, E3) | [`04-experimentos/`](04-experimentos/) | ✅ Resultados generados |
+| Informe final (formato IEEE) | [`05-informe/`](05-informe/) | En redacción: faltan resumen, 7.2, discusión, conclusiones, recomendaciones y declaratoria de IA |
 
 La coordinación del grupo se hizo fuera de GitHub; este repositorio guarda solo el código,
 los datos y los documentos finales.
@@ -80,7 +85,8 @@ sin límite y `ci` operarios que atienden una silla a la vez. Llegadas de Poisso
 semillas distintas, 1 000 h por réplica y 100 h de calentamiento descartadas.
 
 **Control:** el promedio de la simulación base se acerca a la Tabla VI del informe
-(por ejemplo, ensamblaje con ρ ≈ 75 % y Wq ≈ 45 min).
+(por ejemplo, ensamblaje con ρ ≈ 75 % y Wq ≈ 45 min). Cada resumen también compara
+`Lq` con `λ · Wq` para verificar la Ley de Little (ecuación (6)).
 
 ### Escenarios experimentales
 
@@ -100,14 +106,29 @@ python main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.js
   --salida ../04-experimentos
 ```
 
+### Resultados principales
+
+| Indicador | E1 Base | E2 (c₃ = 2) | E3 (t₃ = 10 min) |
+|---|:---:|:---:|:---:|
+| ρ ensamblaje | 75,1 % | 37,3 % | 49,7 % |
+| Wq ensamblaje | 45,4 min | 2,5 min | 9,7 min |
+| Tiempo total de flujo | 124,0 min | 81,1 min | 82,2 min |
+| Producción | 2,998 sillas/h | 3,002 sillas/h | 2,988 sillas/h |
+| Cuello de botella | Ensamblaje | Acabado | Acabado |
+| Error máximo frente a la teoría | 1,3 % | 1,6 % | 3,2 % |
+
+Las dos mejoras casi eliminan la espera en ensamblaje y el cuello de botella pasa a acabado.
+La producción no cambia porque solo llegan 3 sillas/h. Las tablas completas y los gráficos
+están en [`04-experimentos/`](04-experimentos/README.md).
+
 ---
 
 ## Estructura del repositorio
 
 ```
 simulacion-linea-muebles/
-├── 01-investigacion/   # artículos, introducción, referencias IEEE
-├── 02-modelo/          # diagrama del proceso, parámetros, ecuaciones
+├── 01-investigacion/   # vacía: la revisión de literatura está en el informe
+├── 02-modelo/          # vacía: parámetros y ecuaciones están en el informe
 ├── 03-simulacion/      # código Python y resultados base
 │   ├── modelo/         # configuración, simulación y teoría
 │   ├── vista/          # tablas, gráficos y animación
