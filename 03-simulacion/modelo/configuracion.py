@@ -1,6 +1,7 @@
 """Carga y validación de los escenarios JSON."""
 
 import json
+import math
 from numbers import Real
 from pathlib import Path
 
@@ -14,7 +15,8 @@ class ErrorConfiguracion(ValueError):
 
 
 def _es_numero(valor):
-    return isinstance(valor, Real) and not isinstance(valor, bool)
+    """Finite real number; JSON accepts NaN and Infinity, which no parameter can take."""
+    return isinstance(valor, Real) and not isinstance(valor, bool) and math.isfinite(valor)
 
 
 def _es_entero(valor):
