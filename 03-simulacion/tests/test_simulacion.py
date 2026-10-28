@@ -68,7 +68,8 @@ def test_tiempo_de_flujo_suma_esperas_y_servicio(config):
     assert resultado["flujo_min"] == pytest.approx(servicio + esperas, rel=0.1)
 
 
-def test_segundo_ensamblador_se_configura_sin_tocar_codigo(config):
+def test_el_simulador_admite_mas_de_un_operario_si_se_configura(config):
+    """Capacidad del programa: ningún escenario del informe la usa."""
     cfg = copy.deepcopy(config)
     next(e for e in cfg["estaciones"] if e["nombre"] == "Ensamblaje")["recursos"] = 2
     resultado = SimulacionLinea(cfg).correr_replica(11)
@@ -111,17 +112,30 @@ def test_falta_un_campo_y_se_rechaza(tmp_path):
         cargar_escenario(ruta)
 
 
-@pytest.mark.parametrize("archivo, recursos, tiempo", [("e2.json", 2, 15), ("e3.json", 1, 10)])
-def test_escenarios_del_informe_solo_cambian_ensamblaje(archivo, recursos, tiempo):
+@pytest.mark.parametrize("archivo, tiempo", [("base.json", 15), ("e2.json", 12), ("e3.json", 10)])
+def test_escenarios_del_informe_solo_cambian_ensamblaje(archivo, tiempo):
     base = cargar_escenario(BASE)
     cfg = cargar_escenario(BASE.parent / archivo)
     ensamblaje = cfg["estaciones"][2]
     assert (ensamblaje["nombre"], ensamblaje["recursos"], ensamblaje["tiempo_min"]) == (
-        "Ensamblaje", recursos, tiempo)
+        "Ensamblaje", 1, tiempo)
+    assert all(estacion["recursos"] == 1 for estacion in cfg["estaciones"])
     resto = {k: v for k, v in cfg.items() if k not in ("nombre", "estaciones")}
     assert resto == {k: v for k, v in base.items() if k not in ("nombre", "estaciones")}
     assert [e for i, e in enumerate(cfg["estaciones"]) if i != 2] == \
         [e for i, e in enumerate(base["estaciones"]) if i != 2]
+
+
+@pytest.mark.parametrize("archivo, esperado", [("e2.json", 0.60), ("e3.json", 0.50)])
+def test_utilizacion_de_ensamblaje_en_e2_y_e3(archivo, esperado):
+    cfg = cargar_escenario(BASE.parent / archivo)
+    cfg.update(replicas=2, duracion_h=800, calentamiento_h=100)
+    _, resumen = SimulacionLinea(cfg).correr_todas()
+    fila = resumen.loc[resumen["estacion"] == "Ensamblaje"].iloc[0]
+    assert fila["utilizacion_media"] == pytest.approx(esperado, abs=0.04)
+    assert fila["utilizacion_teorica"] == pytest.approx(esperado)
+    assert fila["wq_min_teorico"] == pytest.approx(
+        60 * esperado ** 2 / (3 * (1 - esperado)), abs=0.1)
 
 
 def test_sin_sillas_medidas_las_esperas_y_el_flujo_valen_cero(config):
