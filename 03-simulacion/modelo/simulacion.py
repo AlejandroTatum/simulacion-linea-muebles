@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import simpy
 
-from modelo.teoria import mmc
+from modelo.teoria import mm1
 
 
 class Estacion:
@@ -163,7 +163,7 @@ class SimulacionLinea:
         return replicas, self._resumen(replicas)
 
     def _resumen(self, replicas):
-        """Compara cada estación con su valor teórico M/M/c."""
+        """Compara cada estación con su valor teórico M/M/1."""
         lam = self.escenario["tasa_llegadas_h"]
         filas = []
 
@@ -187,7 +187,7 @@ class SimulacionLinea:
                 "cola_p90_media": datos["cola_p90"].mean(),
             }
             try:
-                teoria = mmc(lam, mu, estacion["recursos"])
+                teoria = mm1(lam, mu, estacion["recursos"])
                 fila.update({
                     "utilizacion_teorica": teoria["utilizacion"],
                     "lq_teorico": teoria["lq"],
