@@ -1,6 +1,6 @@
 # Resultados de la línea base (E1)
 
-Fuente: `resumen-base.csv` y `resultados-base.csv`, generados con `python main.py` (semilla 2026, 30 réplicas de 1 000 h con 100 h de calentamiento). Gráfico: `graficos/base.png`.
+Fuente: `resumen-base.csv` y `resultados-base.csv`, generados con `python main.py` (semilla 2026, 30 réplicas de 1 000 h con 100 h de calentamiento). Gráficos: `graficos/base.png` y las figuras complementarias del final.
 
 Este documento contiene el texto listo para pegar en el informe del grupo (Google Docs). Las tablas y la figura siguen la numeración del informe de avance.
 
@@ -42,3 +42,16 @@ La estación de ensamblaje es el cuello de botella de la línea. Tiene la menor 
 El modelo reproduce los valores teóricos de colas. El error porcentual (ecuación (15)) es menor a 0,6 % en la utilización y menor a 1,3 % en Lq y Wq en todas las estaciones. Las diferencias más grandes aparecen en ensamblaje y acabado, donde la alta utilización vuelve más variables las colas (la desviación estándar de Wq en ensamblaje es de 7,9 min). La Ley de Little (ecuación (6)) también se cumple: por ejemplo, en ensamblaje λWq = 2,998 × 45,4/60 = 2,27 sillas, igual al Lq medido. Esto indica que el modelo es internamente coherente y puede usarse para evaluar los escenarios de mejora del objetivo 2. La Figura 1 compara la utilización y la espera simuladas con las teóricas.
 
 Figura 1. Utilización y tiempo medio de espera por estación en la línea base: simulación (promedio y desviación estándar de 30 réplicas) frente al modelo teórico. *(Insertar `03-simulacion/graficos/base.png`.)*
+
+La cola también se analiza como porcentaje del tiempo en que está ocupada, es decir, con al menos una silla esperando. Los valores simulados fueron 15,9 % en corte, 24,9 % en lijado, 56,4 % en ensamblaje y 36,1 % en acabado; los teóricos `P(N > c)` son 16,0 %, 25,0 %, 56,3 % y 36,0 %, respectivamente. En ensamblaje, el percentil 90 de la longitud de la cola fue 6,7 sillas: durante el 10 % del tiempo hubo siete o más sillas esperando. Esto confirma que el cuello de botella no solo tiene la espera media más alta, sino también la cola más persistente y variable.
+
+## Figuras complementarias
+
+El código genera, además de la Figura 1, las siguientes figuras de apoyo:
+
+- `graficos/cola-base.png`: evolución de la longitud de la cola durante la primera réplica, con el calentamiento sombreado y los valores medio y teórico de `Lq`.
+- `graficos/utilizacion-cola-base.png`: porcentaje del tiempo con cola y longitud media `Lq`, comparados con la teoría M/M/c.
+- `graficos/distribucion-cola-base.png`: distribución del tiempo según la cantidad de sillas esperando.
+- `graficos/replicas-base.png`: cajas de `ρ`, `Lq` y `Wq` para las 30 réplicas.
+- `graficos/flujo-base.png`: composición del tiempo total de flujo (servicio más espera) por estación.
+- `graficos/escenarios.png`: comparación de producción, flujo y utilización del cuello cuando se simulan varios escenarios en una misma corrida.

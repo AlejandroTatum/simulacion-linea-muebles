@@ -36,4 +36,4 @@ def mostrar_resumen(escenario, resumen, linea, cuello, flujo_teorico, archivos):
     print(f"Throughput: {_numero(linea['throughput_h'])} sillas/h | "
           f"tiempo total de flujo: {_numero(linea['flujo_min'], 1)} min ({teoria})")
     print(f"Cuello de botella: {cuello}")
-    print(f"Archivos: {archivos[0]}, {archivos[1]}, {archivos[2]}")
+    print(f"Archivos: {', '.join(archivos)}")

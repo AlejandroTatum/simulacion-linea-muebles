@@ -80,9 +80,26 @@ def test_resumen_compara_con_teoria_y_encuentra_cuello(config):
     assert len(replicas) == 3 * 4
     assert list(resumen["estacion"]) == ["Corte", "Lijado", "Ensamblaje", "Acabado"]
     for columna in ["utilizacion_media", "utilizacion_teorica", "error_utilizacion_pct",
-                    "wq_min_media", "wq_min_teorico", "error_wq_pct", "capacidad_h"]:
+                    "wq_min_media", "wq_min_teorico", "error_wq_pct", "capacidad_h",
+                    "cola_utilizacion_media", "cola_utilizacion_teorica",
+                    "cola_max_media", "cola_p90_media"]:
         assert columna in resumen.columns
     assert cuello_de_botella(resumen) == "Ensamblaje"
+
+
+def test_metricas_de_cola_son_coherentes(config):
+    resultado = SimulacionLinea(config).correr_replica(11)
+    for actual in resultado["estaciones"]:
+        assert 0 <= actual["cola_utilizacion"] <= 1
+        assert actual["cola_max"] >= 0
+        assert 0 <= actual["cola_p90"] <= actual["cola_max"]
+
+
+def test_traza_opcional_guarda_la_primera_replica(config):
+    traza = []
+    replicas, _ = SimulacionLinea(config).correr_todas(traza=traza)
+    assert traza, "la traza de la primera réplica no puede quedar vacía"
+    assert {nombre for _, nombre, _, _ in traza} == set(replicas["estacion"].unique())
 
 
 def test_falta_un_campo_y_se_rechaza(tmp_path):

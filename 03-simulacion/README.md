@@ -113,6 +113,34 @@ Esto ejecuta `escenarios/base.json` y escribe:
 | `resultados-base.csv` | Una fila por réplica y estación. |
 | `resumen-base.csv` | Promedios, desviación, teoría M/M/c y error porcentual. |
 | `graficos/base.png` | Utilización y espera: simulación frente a teoría. |
+| `graficos/cola-base.png` | Evolución de la cola en el tiempo (réplica 1). |
+| `graficos/utilizacion-cola-base.png` | Tiempo con cola y longitud media de la cola. |
+| `graficos/distribucion-cola-base.png` | Distribución de la longitud de la cola. |
+| `graficos/replicas-base.png` | Variabilidad de ρ, Lq y Wq entre réplicas. |
+| `graficos/flujo-base.png` | Composición del tiempo de flujo por estación. |
+| `graficos/escenarios.png` | Comparación de escenarios (solo si se simulan varios). |
+
+**Qué muestra cada gráfico:**
+
+- **`base.png`**: utilización de cada estación y espera media `Wq`, con la teoría M/M/c al lado.
+- **`cola-base.png`**: cómo cambia la longitud de la cola durante una réplica. La franja gris es el
+  calentamiento y las líneas punteadas marcan `Lq` simulado y teórico.
+- **`utilizacion-cola-base.png`**: porcentaje del tiempo con al menos una silla esperando
+  (utilización de la cola) y longitud media `Lq`.
+- **`distribucion-cola-base.png`**: porcentaje del tiempo que la cola pasa con 0, 1, 2, … sillas.
+- **`replicas-base.png`**: cajas de `ρ`, `Lq` y `Wq` para ver cuánto varían las 30 réplicas.
+- **`flujo-base.png`**: cuánto del tiempo total de una silla es servicio y cuánto es espera.
+- **`escenarios.png`**: producción, tiempo de flujo y utilización del cuello de botella en cada
+  escenario ejecutado en la misma corrida.
+
+**Indicadores de cola:**
+
+| Métrica | Significado |
+| --- | --- |
+| `cola_utilizacion` | Fracción del tiempo con al menos una silla esperando (`N > c`). |
+| `cola_p90` | Percentil 90 de la longitud de la cola, ponderado por tiempo. |
+| `cola_max` | Longitud máxima observada durante la ventana medida. |
+| `cola_utilizacion_teorica` | `P(N > c)` del modelo M/M/c: Erlang C multiplicado por `ρ`. |
 
 En la terminal se muestra el resumen por estación, la producción por hora, el tiempo de
 flujo y el cuello de botella.
@@ -214,23 +242,36 @@ repetidos, valores negativos y estaciones sin operarios.
 - Simulación de la línea con estaciones, colas FIFO y varios operarios.
 - Comparación automática con la teoría M/M/c.
 - Detección del cuello de botella por utilización.
+- Indicadores de cola: utilización, percentil 90 y máximo.
 - Resultados en CSV y gráficos PNG.
+- Gráficos de evolución, distribución, variabilidad, flujo y comparación de escenarios.
 - Validación de escenarios antes de ejecutar.
 - Animación del taller para una réplica.
 
 **Resultados de la línea base:**
 
-| Estación | ρ simulado | ρ teórico | Wq simulado (min) | Wq teórico (min) |
-| --- | :---: | :---: | :---: | :---: |
-| Corte | 39,8 % | 40,0 % | 5,3 | 5,3 |
-| Lijado | 49,8 % | 50,0 % | 10,0 | 10,0 |
-| Ensamblaje | 75,1 % | 75,0 % | 45,4 | 45,0 |
-| Acabado | 60,0 % | 60,0 % | 18,2 | 18,0 |
+| Estación | ρ simulado | ρ teórico | Cola ocupada | Wq simulado (min) | Wq teórico (min) |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| Corte | 39,8 % | 40,0 % | 15,9 % | 5,3 | 5,3 |
+| Lijado | 49,8 % | 50,0 % | 24,9 % | 10,0 | 10,0 |
+| Ensamblaje | 75,1 % | 75,0 % | 56,4 % | 45,4 | 45,0 |
+| Acabado | 60,0 % | 60,0 % | 36,1 % | 18,2 | 18,0 |
 
-El cuello de botella es **Ensamblaje**. El detalle y el texto de apoyo están en
+El cuello de botella es **Ensamblaje**. Su cola permanece ocupada el 56,4 % del tiempo y es la que
+más se acerca a su valor teórico (56,3 %). El detalle y el texto de apoyo están en
 [`resultados-base.md`](resultados-base.md).
 
 ![Utilización y espera por estación](graficos/base.png)
+
+![Evolución de la cola en la réplica 1](graficos/cola-base.png)
+
+![Utilización y longitud media de la cola](graficos/utilizacion-cola-base.png)
+
+![Distribución de la longitud de la cola](graficos/distribucion-cola-base.png)
+
+![Variabilidad entre réplicas](graficos/replicas-base.png)
+
+![Composición del tiempo de flujo](graficos/flujo-base.png)
 
 **Escenarios:**
 

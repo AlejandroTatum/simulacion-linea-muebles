@@ -28,6 +28,18 @@ def test_mmc_two_servers_matches_scenario_e2():
     assert r["wq_min"] == pytest.approx(2.45, abs=0.01)
 
 
+def test_probabilidad_de_espera_y_de_cola_mm1():
+    r = mmc(tasa_llegadas=3, tasa_servicio=7.5, servidores=1)
+    assert r["prob_espera"] == pytest.approx(0.4)
+    assert r["prob_cola"] == pytest.approx(0.16)
+
+
+def test_probabilidad_de_cola_mmc_es_erlang_c_por_rho():
+    r = mmc(tasa_llegadas=3, tasa_servicio=4, servidores=2)
+    assert r["prob_cola"] == pytest.approx(r["prob_espera"] * r["utilizacion"])
+    assert r["prob_cola"] == pytest.approx(0.0767, abs=1e-4)
+
+
 def test_unstable_station_is_rejected():
     with pytest.raises(ValueError, match="inestable"):
         mmc(tasa_llegadas=4, tasa_servicio=4, servidores=1)

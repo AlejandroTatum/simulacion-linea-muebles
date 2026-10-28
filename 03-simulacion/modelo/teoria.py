@@ -14,6 +14,8 @@ def mmc(tasa_llegadas, tasa_servicio, servidores):
     suma = sum(a**k / factorial(k) for k in range(c))
     p0 = 1 / (suma + a**c / (factorial(c) * (1 - rho)))
     lq = p0 * a**c * rho / (factorial(c) * (1 - rho) ** 2)
+    prob_espera = p0 * a**c / (factorial(c) * (1 - rho))  # P(N >= c): Erlang C
+    prob_cola = prob_espera * rho  # P(N > c): tiempo con al menos una silla esperando
     wq = lq / lam
     w = wq + 1 / mu
     return {
@@ -23,6 +25,8 @@ def mmc(tasa_llegadas, tasa_servicio, servidores):
         "wq_min": wq * 60,
         "l": lam * w,
         "w_min": w * 60,
+        "prob_espera": prob_espera,
+        "prob_cola": prob_cola,
     }
 
 
