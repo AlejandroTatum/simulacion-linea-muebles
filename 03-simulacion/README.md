@@ -100,10 +100,55 @@ un servidor sin pantalla, usar `--guardar` como se explica en la sección 4.
 
 ## 4. Uso
 
-Desde `03-simulacion/`:
+### 4.1 Activar el entorno virtual
+
+Todos los comandos de esta sección se ejecutan con el Python del entorno virtual.
+Desde la raíz del repositorio:
+
+**Linux / macOS:**
 
 ```bash
+source .venv/bin/activate
+```
+
+**Windows PowerShell:**
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+**Windows CMD:**
+
+```bat
+.venv\Scripts\activate.bat
+```
+
+Comprobar que quedó activo:
+
+```bash
+python --version
+```
+
+Debe mostrar Python 3.12 o superior. Si `python` no existe, usá `python3` o directamente
+el Python del entorno: `.venv/bin/python` en Linux/macOS y `.venv\Scripts\python.exe` en Windows.
+
+### 4.2 Ejecutar la simulación base
+
+```bash
+cd 03-simulacion
 python main.py
+```
+
+Si no activaste el entorno, desde `03-simulacion/`:
+
+```bash
+../.venv/bin/python main.py
+```
+
+En Windows:
+
+```powershell
+..\.venv\Scripts\python.exe main.py
 ```
 
 Esto ejecuta `escenarios/base.json` y escribe:
@@ -145,7 +190,7 @@ Esto ejecuta `escenarios/base.json` y escribe:
 En la terminal se muestra el resumen por estación, la producción por hora, el tiempo de
 flujo y el cuello de botella.
 
-**Otros escenarios:**
+### 4.3 Ejecutar otros escenarios
 
 ```bash
 python main.py --config escenarios/e2.json
@@ -154,17 +199,22 @@ python main.py --config escenarios/e2.json --salida ../04-experimentos
 ```
 
 `--salida` cambia la carpeta de resultados y gráficos. Los escenarios se validan todos
-antes de simular; si uno tiene un error, no se escribe nada.
+antes de simular; si uno tiene un error, no se escribe nada. Cuando se simulan varios
+escenarios en la misma corrida también se genera `graficos/escenarios.png`.
 
-**Pruebas:**
+### 4.4 Ejecutar las pruebas
 
 ```bash
 python -m pytest
 ```
 
-También se pueden ejecutar desde la raíz del repositorio con el mismo comando.
+Desde la raíz del repositorio:
 
-**Animación del taller:**
+```bash
+python -m pytest 03-simulacion
+```
+
+### 4.5 Ver la animación del taller
 
 ```bash
 python animacion.py
@@ -173,7 +223,35 @@ python animacion.py --guardar graficos/base.gif
 ```
 
 La animación usa una sola réplica y sirve para explicar la dinámica; los números del
-informe salen de `main.py`. `--guardar` funciona sin entorno gráfico.
+informe salen de `main.py`. Las opciones principales son:
+
+- `--horas`: horas simuladas a mostrar (por defecto 8).
+- `--paso`: minutos simulados por cuadro (por defecto 5).
+- `--semilla`: semilla de la réplica.
+- `--guardar`: guarda un GIF en vez de abrir una ventana.
+
+Para una prueba rápida sin abrir ventana:
+
+```bash
+python animacion.py --horas 2 --paso 10 --guardar graficos/prueba.gif
+```
+
+En Linux, para abrir la ventana hace falta Tk (`sudo apt install python3-tk`). En WSL,
+SSH o servidores sin pantalla, usá siempre `--guardar`.
+
+### 4.6 Solución de problemas
+
+| Problema | Causa probable | Solución |
+| --- | --- | --- |
+| `python: command not found` | El entorno virtual no está activado | `source .venv/bin/activate` o usá `../.venv/bin/python` |
+| `No module named 'simpy'` o `'matplotlib'` | Estás usando el Python del sistema | Activá el venv o usá el Python de `.venv` |
+| `No module named 'vista'` o `No such file: animacion.py` | Estás en la carpeta equivocada | `cd 03-simulacion` |
+| `TclError: no display name and no $DISPLAY` | No hay entorno gráfico | Usá `--guardar graficos/base.gif` |
+| La ventana se abre y la terminal queda ocupada | La animación sigue en ejecución | Cerrá la ventana para terminar |
+| El GIF tarda mucho | Son muchos cuadros | Probá `--horas 2 --paso 10` |
+| `No such file: escenarios/e2.json` | Ruta relativa desde otra carpeta | Ejecutá desde `03-simulacion` o pasá la ruta completa |
+
+Si el error persiste, copiá el mensaje completo y el comando que ejecutaste.
 
 ## 5. Configuración
 

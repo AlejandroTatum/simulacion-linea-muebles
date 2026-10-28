@@ -8,19 +8,43 @@ Proyecto grupal: simulación de eventos discretos de una línea de fabricación 
 
 ## Inicio rápido
 
-Requiere Python 3.12 o superior. Las instrucciones completas para Linux, macOS y Windows están en [`03-simulacion/README.md`](03-simulacion/README.md).
+Requiere Python 3.12 o superior. Las instrucciones completas, la explicación de cada gráfica
+y la solución de problemas están en [`03-simulacion/README.md`](03-simulacion/README.md).
+
+**Linux / macOS:**
 
 ```bash
-# Linux / macOS
 python3 -m venv .venv
-. .venv/bin/activate
+source .venv/bin/activate
 python -m pip install -r 03-simulacion/requirements.txt
 cd 03-simulacion
 python main.py
 python -m pytest
 ```
 
-En Windows PowerShell la activación es `.\.venv\Scripts\Activate.ps1`.
+**Windows PowerShell:**
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r 03-simulacion\requirements.txt
+cd 03-simulacion
+python main.py
+python -m pytest
+```
+
+Si `python` no existe, usá `python3` o el Python del entorno virtual:
+`.venv/bin/python` en Linux/macOS y `.venv\Scripts\python.exe` en Windows.
+
+Para generar la animación como GIF, sin abrir ventana:
+
+```bash
+cd 03-simulacion
+python animacion.py --guardar graficos/base.gif
+```
+
+> **Nota:** si el comando `python` falla, casi siempre es porque el entorno virtual no está
+> activado. Los comandos de esta guía suponen que estás dentro de `03-simulacion/`.
 
 ---
 
