@@ -23,9 +23,11 @@ Todos usan 30 réplicas de 1 000 h, 100 h de calentamiento, semilla base 2026 y
 | Producción (sillas/h) | 2,998 | 3,002 | 2,988 |
 | Cuello de botella simulado | Ensamblaje | Acabado | Acabado |
 | Error máximo frente a la teoría (ρ, Lq, Wq) | 1,3 % | 1,6 % | 3,2 % |
+| Error máximo de la Ley de Little (Lq frente a λ·Wq) | 0,20 % | 0,12 % | 0,20 % |
 
-El detalle por estación (media, desviación estándar, valor teórico y error porcentual,
-ecuación (15)) está en `resumen-<escenario>.csv`. Los valores por réplica están en
+El detalle por estación (media, desviación estándar, valor teórico, error porcentual con la
+ecuación (15) y la comprobación de la Ley de Little (6) en `lq_little` y `error_little_pct`)
+está en `resumen-<escenario>.csv`. Los valores por réplica están en
 `resultados-<escenario>.csv`.
 
 ## Archivos
