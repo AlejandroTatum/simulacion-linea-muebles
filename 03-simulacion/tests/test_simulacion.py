@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from modelo.configuracion import ErrorConfiguracion, cargar_escenario
-from modelo.simulacion import SimulacionLinea, cuello_de_botella
+from modelo.simulacion import SimulacionLinea, comparar_linea, cuello_de_botella
 
 BASE = Path(__file__).resolve().parents[1] / "escenarios" / "base.json"
 
@@ -101,6 +101,22 @@ def test_traza_opcional_guarda_la_primera_replica(config):
     replicas, _ = SimulacionLinea(config).correr_todas(traza=traza)
     assert traza, "la traza de la primera réplica no puede quedar vacía"
     assert {nombre for _, nombre, _, _ in traza} == set(replicas["estacion"].unique())
+
+
+def test_resumen_y_linea_verifican_la_ley_de_little(config):
+    cfg = copy.deepcopy(config)
+    cfg.update(replicas=2, duracion_h=500, calentamiento_h=50)
+    replicas, resumen = SimulacionLinea(cfg).correr_todas()
+
+    assert {"lq_little", "error_little_pct"} <= set(resumen.columns)
+    assert (resumen["error_little_pct"] < 5).all()
+
+    linea = comparar_linea(replicas, resumen, cfg)
+    assert linea["flujo_teorico_min"] == pytest.approx(123.333, abs=0.01)
+    assert linea["throughput_teorico_h"] == 3
+    assert linea["cuello"] == "Ensamblaje"
+    assert linea["error_flujo_pct"] < 10
+    assert linea["lq_little_total"] == pytest.approx(linea["lq_total"], rel=0.05)
 
 
 def test_falta_un_campo_y_se_rechaza(tmp_path):

@@ -3,8 +3,8 @@
 import math
 
 COLUMNAS = ["estacion", "capacidad_h", "utilizacion_media", "utilizacion_teorica",
-            "error_utilizacion_pct", "lq_media", "lq_teorico", "wq_min_media",
-            "wq_min_teorico", "error_wq_pct"]
+            "error_utilizacion_pct", "lq_media", "lq_teorico", "error_lq_pct",
+            "wq_min_media", "wq_min_teorico", "error_wq_pct"]
 
 
 def _numero(valor, decimales=3):
@@ -18,7 +18,13 @@ def _numero(valor, decimales=3):
     return f"{valor:.{decimales}f}"
 
 
-def mostrar_resumen(escenario, resumen, linea, cuello, flujo_teorico, archivos):
+def _flujo_teorico_texto(valor):
+    if valor is None or math.isnan(float(valor)):
+        return "sin teoría M/M/1"
+    return f"teoría {valor:.1f} min"
+
+
+def mostrar_resumen(escenario, resumen, linea, archivos):
     """Imprime el resumen de un escenario ya simulado."""
     print(f"Escenario: {escenario['nombre']} | {escenario['replicas']} réplicas de "
           f"{escenario['duracion_h']} h ({escenario['calentamiento_h']} h de calentamiento)")
@@ -31,9 +37,14 @@ def mostrar_resumen(escenario, resumen, linea, cuello, flujo_teorico, archivos):
 
     print(f"Sillas terminadas por réplica: {_numero(linea['sillas_terminadas'], 1)} "
           f"(desv. {_numero(linea['sillas_desv'], 1)})")
-    teoria = ("sin régimen estable" if flujo_teorico is None
-              else f"teoría {flujo_teorico:.1f} min")
-    print(f"Throughput: {_numero(linea['throughput_h'])} sillas/h | "
-          f"tiempo total de flujo: {_numero(linea['flujo_min'], 1)} min ({teoria})")
-    print(f"Cuello de botella: {cuello}")
+    print(f"Throughput: {_numero(linea['throughput_h'])} sillas/h "
+          f"(teoría {_numero(linea['throughput_teorico_h'])}, "
+          f"error {_numero(linea['error_throughput_pct'])} %)")
+    print(f"Tiempo total de flujo: {_numero(linea['flujo_min'], 1)} min "
+          f"({_flujo_teorico_texto(linea['flujo_teorico_min'])}, "
+          f"error {_numero(linea['error_flujo_pct'])} %)")
+    print(f"Ley de Little: Lq total {_numero(linea['lq_total'])} = "
+          f"λ·Wq {_numero(linea['lq_little_total'])} "
+          f"(error {_numero(linea['error_little_total_pct'])} %)")
+    print(f"Cuello de botella: {linea['cuello']}")
     print(f"Archivos: {', '.join(archivos)}")

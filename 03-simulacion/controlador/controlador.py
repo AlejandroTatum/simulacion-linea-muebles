@@ -2,10 +2,10 @@
 
 from pathlib import Path
 
+import pandas as pd
+
 from modelo.configuracion import ErrorConfiguracion, cargar_escenario
-from modelo.simulacion import (SimulacionLinea, cuello_de_botella,
-                               resumir_linea)
-from modelo.teoria import flujo_teorico_min
+from modelo.simulacion import SimulacionLinea, comparar_linea
 from vista.graficas import (graficar, graficar_cola, graficar_distribucion_cola,
                             graficar_escenarios, graficar_flujo, graficar_replicas,
                             graficar_utilizacion_cola)
@@ -49,6 +49,7 @@ class ControladorSimulacion:
         nombre = ruta.stem
         ruta_replicas = self.salida / f"resultados-{nombre}.csv"
         ruta_resumen = self.salida / f"resumen-{nombre}.csv"
+        ruta_linea = self.salida / f"linea-{nombre}.csv"
         graficos = self.salida / "graficos"
 
         rutas_graficos = {
@@ -69,12 +70,11 @@ class ControladorSimulacion:
         graficar_replicas(replicas, resumen, rutas_graficos["replicas"])
         graficar_flujo(resumen, escenario, rutas_graficos["flujo"])
 
-        linea = resumir_linea(replicas)
-        cuello = cuello_de_botella(resumen)
-        flujo_teorico = flujo_teorico_min(escenario["tasa_llegadas_h"],
-                                          escenario["estaciones"])
-        archivos = [ruta_replicas.name, ruta_resumen.name] + [
+        linea = comparar_linea(replicas, resumen, escenario)
+        cuello = linea["cuello"]
+        pd.DataFrame([linea]).round(6).to_csv(ruta_linea, index=False)
+        archivos = [ruta_replicas.name, ruta_resumen.name, ruta_linea.name] + [
             ruta.relative_to(self.salida).as_posix() for ruta in rutas_graficos.values()]
-        mostrar_resumen(escenario, resumen, linea, cuello, flujo_teorico, archivos)
+        mostrar_resumen(escenario, resumen, linea, archivos)
         return {"nombre": nombre, "escenario": escenario, "resumen": resumen,
                 "linea": linea, "cuello": cuello}
