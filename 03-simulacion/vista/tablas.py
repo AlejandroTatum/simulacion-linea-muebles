@@ -4,7 +4,7 @@ import math
 
 COLUMNAS = ["estacion", "capacidad_h", "utilizacion_media", "utilizacion_teorica",
             "error_utilizacion_pct", "lq_media", "lq_teorico", "wq_min_media",
-            "wq_min_teorico", "error_wq_pct"]
+            "wq_min_teorico", "error_wq_pct", "error_little_pct"]
 
 
 def _numero(valor, decimales=3):

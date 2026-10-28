@@ -204,6 +204,9 @@ class SimulacionLinea:
                 fila["utilizacion_media"], fila["utilizacion_teorica"])
             fila["error_lq_pct"] = _error_pct(fila["lq_media"], fila["lq_teorico"])
             fila["error_wq_pct"] = _error_pct(fila["wq_min_media"], fila["wq_min_teorico"])
+            # Ley de Little (6): Lq = lambda * Wq, con la tasa observada en la simulacion.
+            fila["lq_little"] = datos["throughput_h"].mean() * fila["wq_min_media"] / 60
+            fila["error_little_pct"] = _error_pct(fila["lq_media"], fila["lq_little"])
             filas.append(fila)
 
         return pd.DataFrame(filas)

@@ -6,7 +6,7 @@
 | Ciclo | 5.º ciclo - FEIRNNR, Carrera de Computación |
 | Práctica | Trabajo grupal de simulación |
 | Docente | José O. Guamán Q. |
-| Integrantes | Integrante 1, Integrante 2, Integrante 3, Integrante 4, Integrante 5 |
+| Integrantes | Victor Roa, Francis Valdiviezo, Cael Soto, Jimmy Ontaneda, Alejandro Padilla |
 
 ## 1. Descripción del proyecto
 
@@ -156,7 +156,7 @@ Esto ejecuta `escenarios/base.json` y escribe:
 | Archivo | Contenido |
 | --- | --- |
 | `resultados-base.csv` | Una fila por réplica y estación. |
-| `resumen-base.csv` | Promedios, desviación, teoría M/M/c y error porcentual. |
+| `resumen-base.csv` | Promedios, desviación, teoría M/M/c, error porcentual y Ley de Little. |
 | `graficos/base.png` | Utilización y espera: simulación frente a teoría. |
 | `graficos/cola-base.png` | Evolución de la cola en el tiempo (réplica 1). |
 | `graficos/utilizacion-cola-base.png` | Tiempo con cola y longitud media de la cola. |
@@ -186,6 +186,8 @@ Esto ejecuta `escenarios/base.json` y escribe:
 | `cola_p90` | Percentil 90 de la longitud de la cola, ponderado por tiempo. |
 | `cola_max` | Longitud máxima observada durante la ventana medida. |
 | `cola_utilizacion_teorica` | `P(N > c)` del modelo M/M/c: Erlang C multiplicado por `ρ`. |
+| `lq_little` | `λ · Wq` con la producción observada; es el `Lq` que predice la Ley de Little (6). |
+| `error_little_pct` | Diferencia entre `Lq` medido y `lq_little` con la ecuación (15). |
 
 En la terminal se muestra el resumen por estación, la producción por hora, el tiempo de
 flujo y el cuello de botella.
