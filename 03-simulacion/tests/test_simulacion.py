@@ -87,6 +87,16 @@ def test_resumen_compara_con_teoria_y_encuentra_cuello(config):
     assert cuello_de_botella(resumen) == "Ensamblaje"
 
 
+def test_resumen_verifica_la_ley_de_little(config):
+    replicas, resumen = SimulacionLinea(config).correr_todas()
+    lam = replicas["throughput_h"].mean()
+    for _, fila in resumen.iterrows():
+        assert fila["lq_little"] == pytest.approx(lam * fila["wq_min_media"] / 60)
+        assert fila["error_little_pct"] == pytest.approx(
+            abs(fila["lq_media"] - fila["lq_little"]) / fila["lq_little"] * 100)
+        assert fila["error_little_pct"] < 5
+
+
 def test_metricas_de_cola_son_coherentes(config):
     resultado = SimulacionLinea(config).correr_replica(11)
     for actual in resultado["estaciones"]:
