@@ -308,8 +308,11 @@ repetidos, valores negativos y estaciones sin operarios.
 ├── graficos/
 ├── resultados-base.csv
 ├── resumen-base.csv
-└── resultados-base.md
+└── resultados-base.md       # texto de la sección 7.1 (ya integrado en el informe)
 ```
+
+Los resultados de los tres escenarios (E1, E2 y E3) están en
+[`../04-experimentos/`](../04-experimentos/README.md).
 
 - **modelo:** calcula. No imprime ni dibuja.
 - **vista:** muestra tablas, gráficos y animación. No simula.
@@ -320,7 +323,7 @@ repetidos, valores negativos y estaciones sin operarios.
 **Funcionalidades:**
 
 - Simulación de la línea con estaciones, colas FIFO y varios operarios.
-- Comparación automática con la teoría M/M/c.
+- Comparación automática con la teoría M/M/c y verificación de la Ley de Little.
 - Detección del cuello de botella por utilización.
 - Indicadores de cola: utilización, percentil 90 y máximo.
 - Resultados en CSV y gráficos PNG.

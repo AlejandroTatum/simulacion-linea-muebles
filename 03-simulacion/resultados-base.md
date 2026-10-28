@@ -4,6 +4,8 @@ Fuente: `resumen-base.csv` y `resultados-base.csv`, generados con `python main.p
 
 Este documento contiene el texto listo para pegar en el informe del grupo (Google Docs). Las tablas y la figura siguen la numeración del informe de avance.
 
+> **Estado:** ya integrado en el informe (secciones 6.3, 6.4.6 y 7.1). Los resultados de E2 y E3 para la sección 7.2 están en [`../04-experimentos/`](../04-experimentos/).
+
 ---
 
 ## Ajustes a secciones existentes
