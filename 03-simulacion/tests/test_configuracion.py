@@ -83,3 +83,20 @@ def test_un_json_invalido_se_rechaza(tmp_path):
     ruta.write_text("{", encoding="utf-8")
     with pytest.raises(ErrorConfiguracion, match="JSON inválido"):
         cargar_escenario(ruta)
+
+
+@pytest.mark.parametrize("campo", ["tasa_llegadas_h", "duracion_h", "calentamiento_h"])
+@pytest.mark.parametrize("valor", [float("nan"), float("inf")])
+def test_nan_e_infinito_del_escenario_se_rechazan(tmp_path, campo, valor):
+    cfg = _base()
+    cfg[campo] = valor
+    with pytest.raises(ErrorConfiguracion, match=campo):
+        cargar_escenario(_guardar(tmp_path, cfg))
+
+
+@pytest.mark.parametrize("valor", [float("nan"), float("inf")])
+def test_nan_e_infinito_de_una_estacion_se_rechazan(tmp_path, valor):
+    cfg = _base()
+    cfg["estaciones"][0]["tiempo_min"] = valor
+    with pytest.raises(ErrorConfiguracion, match="tiempo_min"):
+        cargar_escenario(_guardar(tmp_path, cfg))

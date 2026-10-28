@@ -48,7 +48,7 @@ class Estacion:
             "recursos": self.recursos,
             "utilizacion": self.area_ocupados / (self.recursos * ventana),
             "lq": self.area_cola / ventana,
-            "wq_min": float(np.mean(self.esperas)) if self.esperas else float("nan"),
+            "wq_min": float(np.mean(self.esperas)) if self.esperas else 0.0,
         }
 
 
@@ -86,7 +86,7 @@ class SimulacionLinea:
             "estaciones": filas,
             "terminadas": registro["terminadas"],
             "throughput_h": registro["terminadas"] / (ventana / 60),
-            "flujo_min": float(np.mean(registro["flujos"])) if registro["flujos"] else float("nan"),
+            "flujo_min": float(np.mean(registro["flujos"])) if registro["flujos"] else 0.0,
         }
 
     def _silla(self, entorno, estaciones, rng, inicio, registro):

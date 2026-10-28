@@ -105,3 +105,13 @@ def test_escenarios_del_informe_solo_cambian_ensamblaje(archivo, recursos, tiemp
     assert resto == {k: v for k, v in base.items() if k not in ("nombre", "estaciones")}
     assert [e for i, e in enumerate(cfg["estaciones"]) if i != 2] == \
         [e for i, e in enumerate(base["estaciones"]) if i != 2]
+
+
+def test_sin_sillas_medidas_las_esperas_y_el_flujo_valen_cero(config):
+    config["tasa_llegadas_h"] = 0.001  # first chair arrives long after the run ends
+    config["duracion_h"] = 2
+    config["calentamiento_h"] = 1
+    resultado = SimulacionLinea(config).correr_replica(semilla=1)
+    assert resultado["terminadas"] == 0
+    assert resultado["flujo_min"] == 0.0
+    assert [e["wq_min"] for e in resultado["estaciones"]] == [0.0] * 4
