@@ -131,7 +131,7 @@ flowchart LR
 
 **Configuración de la corrida:** línea vacía al inicio, 30 réplicas independientes con semillas distintas, 1 000 h por réplica y 100 h de calentamiento descartadas.
 
-**Para el integrante 4:** `ci` y `ti` deben poder cambiarse sin tocar el código, porque los escenarios E2 (`c3 = 2`) y E3 (`t3 = 10` min) de la Tabla VII se corren con el mismo programa.
+**Para el integrante 4:** `ci` y `ti` deben poder cambiarse sin tocar el código, porque los escenarios E2 (`t3 = 12` min) y E3 (`t3 = 10` min) de la Tabla VII se corren con el mismo programa.
 
 ```bash
 cd 03-simulacion
@@ -148,7 +148,7 @@ python main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.js
 *Responsable de evaluar las alternativas* · Carpeta: `04-experimentos/`
 
 - [ ] Ejecutar y documentar los tres escenarios experimentales.
-- [ ] Comparar la línea base con el aumento de recursos y la mejora de tiempos.
+- [ ] Comparar la línea base con las dos mejoras de tiempo en ensamblaje.
 - [ ] Calcular las diferencias y errores porcentuales frente a los valores teóricos aplicables.
 - [ ] Crear tablas y gráficos comparativos.
 - [ ] Identificar el cuello de botella y la alternativa más conveniente.

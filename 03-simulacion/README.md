@@ -12,17 +12,17 @@
 
 El programa simula una línea de fabricación de sillas con cuatro estaciones en serie:
 **corte → lijado → ensamblaje → acabado**. Las sillas llegan al azar, esperan en una cola
-FIFO y son atendidas por uno o más operarios en cada estación.
+FIFO y son atendidas por un operario en cada estación.
 
 **Propósito:** comparar los indicadores de la simulación con los valores teóricos del
-modelo M/M/c y encontrar la estación que limita la producción.
+modelo M/M/1 y encontrar la estación que limita la producción.
 
 **Supuestos del modelo:**
 
 - Llegadas de Poisson con tasa `λ` sillas por hora.
 - Tiempos de servicio exponenciales con media `ti` minutos.
 - Cola FIFO sin límite en cada estación.
-- Cada operario atiende una silla a la vez.
+- Un operario por estación (`c = 1`) en todos los escenarios.
 - No hay fallas, turnos, transporte ni retrabajo.
 
 **Parámetros de la línea base:**
@@ -37,10 +37,10 @@ modelo M/M/c y encontrar la estación que limita la producción.
 Tasa de llegadas: `λ = 3` sillas/h. Cada réplica simula 1 000 h y descarta las primeras
 100 h de calentamiento.
 
-| Medida | Significado | Fórmula |
+| Medida | Significado | Fórmula M/M/1 |
 | --- | --- | --- |
-| `ρ` | Ocupación de la estación | `λ / (c · μ)` |
-| `Lq` | Sillas esperando en cola | M/M/c |
+| `ρ` | Ocupación de la estación | `λ / μ` |
+| `Lq` | Sillas esperando en cola | `ρ² / (1 − ρ)` |
 | `Wq` | Espera media en cola | `Lq / λ` |
 | `W` | Tiempo en la estación | `Wq + 1/μ` |
 
@@ -156,7 +156,8 @@ Esto ejecuta `escenarios/base.json` y escribe:
 | Archivo | Contenido |
 | --- | --- |
 | `resultados-base.csv` | Una fila por réplica y estación. |
-| `resumen-base.csv` | Promedios, desviación, teoría M/M/c y error porcentual. |
+| `resumen-base.csv` | Promedios, desviación, teoría M/M/1 y error porcentual. |
+| `linea-base.csv` | Producción, flujo total y Ley de Little de la línea. |
 | `graficos/base.png` | Utilización y espera: simulación frente a teoría. |
 | `graficos/cola-base.png` | Evolución de la cola en el tiempo (réplica 1). |
 | `graficos/utilizacion-cola-base.png` | Tiempo con cola y longitud media de la cola. |
@@ -167,7 +168,7 @@ Esto ejecuta `escenarios/base.json` y escribe:
 
 **Qué muestra cada gráfico:**
 
-- **`base.png`**: utilización de cada estación y espera media `Wq`, con la teoría M/M/c al lado.
+- **`base.png`**: utilización de cada estación y espera media `Wq`, con la teoría M/M/1 al lado.
 - **`cola-base.png`**: cómo cambia la longitud de la cola durante una réplica. La franja gris es el
   calentamiento y las líneas punteadas marcan `Lq` simulado y teórico.
 - **`utilizacion-cola-base.png`**: porcentaje del tiempo con al menos una silla esperando
@@ -175,20 +176,22 @@ Esto ejecuta `escenarios/base.json` y escribe:
 - **`distribucion-cola-base.png`**: porcentaje del tiempo que la cola pasa con 0, 1, 2, … sillas.
 - **`replicas-base.png`**: cajas de `ρ`, `Lq` y `Wq` para ver cuánto varían las 30 réplicas.
 - **`flujo-base.png`**: cuánto del tiempo total de una silla es servicio y cuánto es espera.
-- **`escenarios.png`**: producción, tiempo de flujo y utilización del cuello de botella en cada
-  escenario ejecutado en la misma corrida.
+- **`escenarios.png`**: utilización, `Lq` y `Wq` de ensamblaje y acabado en E1, E2 y E3,
+  con el valor teórico marcado con un rombo.
 
 **Indicadores de cola:**
 
 | Métrica | Significado |
 | --- | --- |
-| `cola_utilizacion` | Fracción del tiempo con al menos una silla esperando (`N > c`). |
+| `cola_utilizacion` | Fracción del tiempo con al menos una silla esperando (`N > 1`). |
 | `cola_p90` | Percentil 90 de la longitud de la cola, ponderado por tiempo. |
 | `cola_max` | Longitud máxima observada durante la ventana medida. |
-| `cola_utilizacion_teorica` | `P(N > c)` del modelo M/M/c: Erlang C multiplicado por `ρ`. |
+| `cola_utilizacion_teorica` | `P(N > 1) = ρ²` del modelo M/M/1. |
+| `lq_little` | `λ_efectiva · Wq` para comprobar la Ley de Little. |
+| `error_little_pct` | Error porcentual entre `Lq` medido y el de la Ley de Little. |
 
 En la terminal se muestra el resumen por estación, la producción por hora, el tiempo de
-flujo y el cuello de botella.
+flujo, la Ley de Little y el cuello de botella.
 
 ### 4.3 Ejecutar otros escenarios
 
@@ -197,6 +200,16 @@ python main.py --config escenarios/e2.json
 python main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.json
 python main.py --config escenarios/e2.json --salida ../04-experimentos
 ```
+
+| Archivo | Escenario | Diferencia con E1 |
+| --- | --- | --- |
+| `escenarios/base.json` | E1 (base) | — |
+| `escenarios/e2.json` | E2 | Ensamblaje en 12 min |
+| `escenarios/e3.json` | E3 | Ensamblaje en 10 min |
+
+Los tres usan un solo operario por estación (`c = 1`), `λ = 3` sillas/h y los mismos
+corte, lijado y acabado de E1. Los resultados llevan el nombre del archivo:
+`resumen-e2.csv`, `linea-e2.csv`, `graficos/e2.png`, etc.
 
 `--salida` cambia la carpeta de resultados y gráficos. Los escenarios se validan todos
 antes de simular; si uno tiene un error, no se escribe nada. Cuando se simulan varios
@@ -273,7 +286,7 @@ Cada estación tiene:
 | Campo | Significado |
 | --- | --- |
 | `nombre` | Nombre de la estación. |
-| `recursos` | Operarios en paralelo. Entero mayor o igual que 1. |
+| `recursos` | Operarios en paralelo. En los escenarios del informe siempre es 1. |
 | `tiempo_min` | Tiempo medio de servicio, en minutos. |
 
 Para crear un escenario, copiar `escenarios/base.json`, cambiar los valores y pasar el
@@ -290,7 +303,7 @@ repetidos, valores negativos y estaciones sin operarios.
 ├── modelo/
 │   ├── configuracion.py     # lee y valida los JSON
 │   ├── simulacion.py        # Estacion y SimulacionLinea (SimPy)
-│   └── teoria.py            # fórmulas M/M/c
+│   └── teoria.py            # fórmulas M/M/1
 ├── vista/
 │   ├── tablas.py            # salida de la terminal
 │   ├── graficas.py          # gráficos PNG
@@ -317,9 +330,10 @@ repetidos, valores negativos y estaciones sin operarios.
 
 **Funcionalidades:**
 
-- Simulación de la línea con estaciones, colas FIFO y varios operarios.
-- Comparación automática con la teoría M/M/c.
+- Simulación de la línea con estaciones, colas FIFO y un operario por estación.
+- Comparación automática con la teoría M/M/1.
 - Detección del cuello de botella por utilización.
+- Verificación de la Ley de Little y del tiempo total de flujo por escenario.
 - Indicadores de cola: utilización, percentil 90 y máximo.
 - Resultados en CSV y gráficos PNG.
 - Gráficos de evolución, distribución, variabilidad, flujo y comparación de escenarios.
@@ -353,8 +367,27 @@ más se acerca a su valor teórico (56,3 %). El detalle y el texto de apoyo est�
 
 **Escenarios:**
 
-| Archivo | Cambio respecto de la base |
-| --- | --- |
-| `escenarios/base.json` | Línea base. |
-| `escenarios/e2.json` | Ensamblaje con 2 operarios. |
-| `escenarios/e3.json` | Ensamblaje con tiempo medio de 10 min. |
+| Archivo | Escenario | Cambio respecto de E1 | Flujo teórico |
+| --- | --- | --- | :---: |
+| `escenarios/base.json` | E1 | Línea base. | 123,3 min |
+| `escenarios/e2.json` | E2 | Ensamblaje en 12 min. | 93,3 min |
+| `escenarios/e3.json` | E3 | Ensamblaje en 10 min. | 83,3 min |
+
+En E1 el cuello de botella es ensamblaje (75 %). En E2, ensamblaje y acabado empatan
+al 60 %; en E3 el cuello pasa a acabado (60 %) porque ensamblaje baja al 50 %. La
+producción se mantiene en 3 sillas/h en los tres escenarios porque la línea entrega
+todo lo que llega.
+
+![Ensamblaje y acabado en cada escenario](graficos/escenarios.png)
+
+**Resumen numérico por escenario:**
+
+| Escenario | ρ ensamblaje | Lq ensamblaje | Wq ensamblaje (min) | Error máx. ρ/Lq/Wq |
+| --- | :---: | :---: | :---: | :---: |
+| E1 | 75,1 % | 2,27 | 45,4 | 1,26 % |
+| E2 | 59,8 % | 0,87 | 17,3 | 4,07 % |
+| E3 | 49,7 % | 0,48 | 9,7 | 3,22 % |
+
+El error máximo de E2 (4,07 % en `Wq` de ensamblaje) está dentro del 5 %; el resto de
+las estaciones queda por debajo del 3,3 %. Los valores por estación están en
+`resumen-e2.csv` y `resumen-e3.csv`, y la Ley de Little en `linea-e2.csv` y `linea-e3.csv`.
