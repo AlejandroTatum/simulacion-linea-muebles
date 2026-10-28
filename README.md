@@ -2,7 +2,25 @@
 
 Proyecto grupal: simulación de eventos discretos de una línea de fabricación de sillas (corte → lijado → ensamblaje → acabado), con modelo matemático, programa en Python, experimentos y un informe académico en formato IEEE.
 
-> **Regla de oro:** cada integrante trabaja **solo en su carpeta** y sube sus cambios con un Pull Request. Nadie edita la carpeta de otro sin avisar.
+> **Regla de oro:** cada integrante trabaja **solo en su carpeta** y sube sus cambios con un Pull Request. Nadie edita la carpeta de otro sin avisar. La única excepción es actualizar la tabla de estados de este README.
+
+---
+
+## Inicio rápido
+
+Requiere Python 3.12 o superior. Las instrucciones completas para Linux, macOS y Windows están en [`03-simulacion/README.md`](03-simulacion/README.md).
+
+```bash
+# Linux / macOS
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r 03-simulacion/requirements.txt
+cd 03-simulacion
+python main.py
+python -m pytest
+```
+
+En Windows PowerShell la activación es `.\.venv\Scripts\Activate.ps1`.
 
 ---
 
@@ -91,10 +109,16 @@ flowchart LR
 
 **Para el integrante 4:** `ci` y `ti` deben poder cambiarse sin tocar el código, porque los escenarios E2 (`c3 = 2`) y E3 (`t3 = 10` min) de la Tabla VII se corren con el mismo programa.
 
+```bash
+cd 03-simulacion
+python main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.json \
+  --salida ../04-experimentos
+```
+
 **Control:** el promedio de la simulación base debe acercarse a la Tabla VI del informe (por ejemplo, ensamblaje con ρ ≈ 75 % y Wq ≈ 45 min).
 
 **Entregable:** código ejecutable, instrucciones de ejecución y resultados de la simulación base.
-**Archivos esperados:** `src/` (código), `requirements.txt`, `README.md` con cómo ejecutar, `resultados-base.csv`.
+**Archivos esperados:** `main.py`, `modelo/`, `vista/`, `controlador/`, `escenarios/`, `tests/`, `requirements.txt`, `README.md` con cómo ejecutar, `resultados-base.csv`.
 
 ### Integrante 4 — Experimentos y análisis
 *Responsable de evaluar las alternativas* · Carpeta: `04-experimentos/`
@@ -106,7 +130,7 @@ flowchart LR
 - [ ] Identificar el cuello de botella y la alternativa más conveniente.
 
 **Entregable:** resultados experimentales, gráficas y análisis comparativo.
-**Archivos esperados:** `escenarios.md`, `resultados/*.csv`, `graficos/*.png`, `analisis.md`.
+**Archivos esperados:** `escenarios.md`, `resultados-*.csv`, `resumen-*.csv`, `graficos/*.png`, `analisis.md`.
 
 ### Integrante 5 — Integración e informe final
 *Responsable de consolidar el documento* · Carpeta: `05-informe/`
@@ -155,7 +179,7 @@ Después abrí el Pull Request en GitHub.
 
 ### Reglas
 
-- Trabajá **solo dentro de tu carpeta**.
+- Trabajá **solo dentro de tu carpeta**; la única excepción es la tabla de estados de este README.
 - Nombres de archivo sin espacios ni tildes: `modelo-matematico.md`, no `Modelo Matemático.md`.
 - Un PR por entrega; no subas todo de golpe al final.
 - Si dependés del trabajo de otro, comentá en su Issue en lugar de esperar en silencio.
@@ -170,7 +194,11 @@ simulacion-linea-muebles/
 ├── 01-investigacion/   # Integrante 1 — artículos, introducción, referencias IEEE
 ├── 02-modelo/          # Integrante 2 — diagrama, parámetros, ecuaciones
 ├── 03-simulacion/      # Integrante 3 — código Python y resultados base
-│   └── src/
+│   ├── modelo/         # configuración, simulación y teoría
+│   ├── vista/          # tablas, gráficos y animación
+│   ├── controlador/    # une modelo y vista
+│   ├── escenarios/     # archivos JSON de parámetros
+│   └── tests/          # pruebas automáticas
 ├── 04-experimentos/    # Integrante 4 — escenarios, tablas y gráficos
 │   └── graficos/
 └── 05-informe/         # Integrante 5 — informe final consolidado

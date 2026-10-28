@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from graficos import main as graficar
 from main import main as simular
+from vista.graficas import main as graficar
 
 BASE = Path(__file__).resolve().parents[1] / "escenarios" / "base.json"
 
@@ -21,5 +21,5 @@ def test_chart_is_written_from_summary(tmp_path):
 
 def test_missing_summary_is_reported(tmp_path, capsys):
     assert graficar(["--resumen", str(tmp_path / "no.csv"), "--salida", str(tmp_path / "g.png")]) == 1
-    assert "ejecutá primero src/main.py" in capsys.readouterr().err
+    assert "ejecutá primero main.py" in capsys.readouterr().err
     assert not (tmp_path / "g.png").exists()

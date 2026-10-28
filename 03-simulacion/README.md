@@ -1,121 +1,241 @@
-# 03-simulacion — Simulación de la línea de sillas
+# Simulación de una línea de producción de muebles con SimPy
 
-Modelo de eventos discretos en Python (SimPy) de la línea corte → lijado → ensamblaje → acabado, con los parámetros de las Tablas V–VII del informe de avance. Todos los parámetros viven en archivos JSON dentro de `escenarios/`; el código no tiene datos fijos.
+| Campo | Detalle |
+| --- | --- |
+| Asignatura | Simulación |
+| Ciclo | 5.º ciclo - FEIRNNR, Carrera de Computación |
+| Práctica | Trabajo grupal de simulación |
+| Docente | José O. Guamán Q. |
+| Integrantes | Integrante 1, Integrante 2, Integrante 3, Integrante 4, Integrante 5 |
 
-## Requisitos
+## 1. Descripción del proyecto
 
-- Python 3.12 o superior (lo exige NumPy 2.5; probado con 3.13).
-- Las bibliotecas de `requirements.txt`: SimPy, NumPy, pandas, Matplotlib y pytest.
+El programa simula una línea de fabricación de sillas con cuatro estaciones en serie:
+**corte → lijado → ensamblaje → acabado**. Las sillas llegan al azar, esperan en una cola
+FIFO y son atendidas por uno o más operarios en cada estación.
 
-## Cómo ejecutar
+**Propósito:** comparar los indicadores de la simulación con los valores teóricos del
+modelo M/M/c y encontrar la estación que limita la producción.
 
-Desde la raíz del repositorio, una sola vez:
+**Supuestos del modelo:**
+
+- Llegadas de Poisson con tasa `λ` sillas por hora.
+- Tiempos de servicio exponenciales con media `ti` minutos.
+- Cola FIFO sin límite en cada estación.
+- Cada operario atiende una silla a la vez.
+- No hay fallas, turnos, transporte ni retrabajo.
+
+**Parámetros de la línea base:**
+
+| Estación | Operarios `ci` | Tiempo medio `ti` (min/silla) |
+| --- | :---: | :---: |
+| Corte | 1 | 8 |
+| Lijado | 1 | 10 |
+| Ensamblaje | 1 | 15 |
+| Acabado | 1 | 12 |
+
+Tasa de llegadas: `λ = 3` sillas/h. Cada réplica simula 1 000 h y descarta las primeras
+100 h de calentamiento.
+
+| Medida | Significado | Fórmula |
+| --- | --- | --- |
+| `ρ` | Ocupación de la estación | `λ / (c · μ)` |
+| `Lq` | Sillas esperando en cola | M/M/c |
+| `Wq` | Espera media en cola | `Lq / λ` |
+| `W` | Tiempo en la estación | `Wq + 1/μ` |
+
+## 2. Tecnologías utilizadas
+
+- Python 3.12 o superior
+- SimPy (eventos discretos y recursos)
+- NumPy (números aleatorios)
+- pandas (resultados en CSV)
+- Matplotlib (gráficos y animación)
+- pytest (pruebas)
+- Organización en modelo, vista y controlador (MVC)
+
+## 3. Instalación
+
+Las dependencias están fijadas en `requirements.txt`.
+
+**Ubuntu / Debian:**
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r 03-simulacion/requirements.txt
+sudo apt update
+sudo apt install python3 python3-venv python3-pip
+cd simulacion-linea-muebles
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r 03-simulacion/requirements.txt
 ```
 
-Después, desde `03-simulacion/`:
+**macOS:**
 
 ```bash
-cd 03-simulacion
-python src/main.py                 # línea base: escenarios/base.json (30 réplicas, ~4 s)
-python -m pytest                   # 38 pruebas
+cd simulacion-linea-muebles
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r 03-simulacion/requirements.txt
 ```
 
-Cada escenario genera tres archivos (en `03-simulacion/`, o en la carpeta que indique `--salida`):
+**Windows PowerShell:**
+
+```powershell
+cd simulacion-linea-muebles
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r 03-simulacion\requirements.txt
+```
+
+Si PowerShell bloquea la activación, ejecutar una vez:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+```
+
+En Windows CMD la activación es `.venv\Scripts\activate.bat`.
+
+Para ver la animación en Linux hace falta Tk (`sudo apt install python3-tk`). En WSL o en
+un servidor sin pantalla, usar `--guardar` como se explica en la sección 4.
+
+## 4. Uso
+
+Desde `03-simulacion/`:
+
+```bash
+python main.py
+```
+
+Esto ejecuta `escenarios/base.json` y escribe:
 
 | Archivo | Contenido |
-|---|---|
-| `resultados-<escenario>.csv` | Una fila por réplica y estación: `utilizacion`, `lq`, `wq_min`, `sillas_terminadas`, `throughput_h`, `flujo_min`, `semilla`. |
-| `resumen-<escenario>.csv` | Una fila por estación: promedio y desviación estándar de las réplicas, valor teórico M/M/c y error porcentual (ecuación 15). |
-| `graficos/<escenario>.png` | Utilización y espera en cola por estación, simulada frente a teórica. |
+| --- | --- |
+| `resultados-base.csv` | Una fila por réplica y estación. |
+| `resumen-base.csv` | Promedios, desviación, teoría M/M/c y error porcentual. |
+| `graficos/base.png` | Utilización y espera: simulación frente a teoría. |
 
-`<escenario>` es el nombre del archivo JSON sin extensión: `e2.json` → `resumen-e2.csv`, `graficos/e2.png`.
+En la terminal se muestra el resumen por estación, la producción por hora, el tiempo de
+flujo y el cuello de botella.
 
-En pantalla se ve la tabla por estación, la producción por hora, el tiempo total de flujo (con su valor teórico) y el cuello de botella.
-
-## Ver la línea animada
-
-`src/animacion.py` corre una réplica del mismo modelo durante unas horas y la muestra como un taller:
-
-- Cada estación es una mesa de trabajo con sus operarios: de **azul** cuando están trabajando, de **gris** cuando esperan material.
-- Sobre la mesa está la pieza que se procesa y, en el piso, el material que espera turno. La pieza cambia a lo largo de la línea: tablones → piezas cortadas → piezas lijadas → silla armada → silla laqueada.
-- A la derecha, el depósito acumula las sillas terminadas.
-- El cartel de cada estación muestra sus datos (operarios, minutos por silla, ρ) leídos del escenario. El de mayor ρ se marca en rojo como cuello de botella.
-- Abajo, un gráfico escalonado muestra cuántas sillas esperan en cada estación a lo largo del tiempo; el cuello de botella va en rojo con el área sombreada.
+**Otros escenarios:**
 
 ```bash
-python src/animacion.py                                       # línea base, 8 h, 5 min por cuadro
-python src/animacion.py --config escenarios/e2.json --horas 24
-python src/animacion.py --guardar graficos/base.gif           # guarda un GIF en vez de abrir la ventana
+python main.py --config escenarios/e2.json
+python main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.json
+python main.py --config escenarios/e2.json --salida ../04-experimentos
 ```
 
-| Opción | Para qué |
-|---|---|
-| `--config` | Escenario a mostrar (cualquier JSON de `escenarios/`). |
-| `--horas` | Horas simuladas desde que abre la línea, vacía (por defecto 8). |
-| `--paso` | Minutos simulados entre cuadros (por defecto 5). Más chico = más fluido y más lento. |
-| `--semilla` | Cambia la secuencia aleatoria (por defecto, la del escenario). |
-| `--guardar` | Archivo `.gif` donde guardar la animación. |
+`--salida` cambia la carpeta de resultados y gráficos. Los escenarios se validan todos
+antes de simular; si uno tiene un error, no se escribe nada.
 
-La ventana se puede agrandar o achicar: el texto cambia de tamaño junto con el dibujo. Usa la tipografía Inter, incluida en `fuentes/` (licencia OFL), para que se vea igual en cualquier computadora.
-
-Es para ver y explicar la dinámica, no para medir: una sola réplica corta varía mucho. Los números del informe salen de `main.py`.
-
-## Cambiar de escenario
-
-Ya están los tres escenarios del informe:
-
-| Archivo | Escenario | Qué cambia respecto de la base |
-|---|---|---|
-| `escenarios/base.json` | E1 · Línea base | — |
-| `escenarios/e2.json` | E2 · Dos ensambladores | Ensamblaje con `"recursos": 2` |
-| `escenarios/e3.json` | E3 · Ensamblaje en 10 min | Ensamblaje con `"tiempo_min": 10` |
+**Pruebas:**
 
 ```bash
-python src/main.py --config escenarios/e2.json                      # uno
-python src/main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.json   # varios seguidos
+python -m pytest
 ```
 
-Si se pasan varios archivos, primero se validan todos y recién después se simula; un error en el último no hace perder la corrida de los primeros. Los archivos deben tener nombres distintos, porque los resultados se guardan con ese nombre.
+También se pueden ejecutar desde la raíz del repositorio con el mismo comando.
 
-Para un escenario nuevo, copiá `base.json` con otro nombre y cambiá lo que necesites. Campos:
+**Animación del taller:**
+
+```bash
+python animacion.py
+python animacion.py --config escenarios/e2.json --horas 24
+python animacion.py --guardar graficos/base.gif
+```
+
+La animación usa una sola réplica y sirve para explicar la dinámica; los números del
+informe salen de `main.py`. `--guardar` funciona sin entorno gráfico.
+
+## 5. Configuración
+
+Los escenarios están en `escenarios/`. No hay parámetros de la línea escritos dentro del
+código.
 
 | Campo | Significado |
-|---|---|
-| `nombre` | Título que aparece en pantalla y en los CSV. |
-| `tasa_llegadas_h` | λ, sillas que llegan por hora (llegadas de Poisson). |
-| `estaciones` | Lista en orden de proceso. Cada una con `nombre`, `recursos` (operarios en paralelo, ≥ 1) y `tiempo_min` (tiempo medio de proceso, distribución exponencial). |
-| `replicas` | Cantidad de corridas independientes. |
-| `duracion_h` | Horas simuladas por réplica, **incluido** el calentamiento. |
-| `calentamiento_h` | Horas iniciales que se simulan pero no se miden. |
-| `semilla` | Semilla base; con la misma semilla los resultados se repiten exactamente. |
+| --- | --- |
+| `nombre` | Nombre que aparece en la terminal y en los resultados. |
+| `tasa_llegadas_h` | `λ`, sillas que llegan por hora. |
+| `estaciones` | Lista ordenada de estaciones. |
+| `replicas` | Cantidad de réplicas independientes. |
+| `duracion_h` | Horas simuladas por réplica, incluido el calentamiento. |
+| `calentamiento_h` | Horas iniciales que no se miden. |
+| `semilla` | Semilla base para repetir los resultados. |
 
-Si falta un campo o un valor no tiene sentido (por ejemplo `recursos: 0`), el programa avisa y no escribe nada.
+Cada estación tiene:
 
-## Cómo está organizado el código
+| Campo | Significado |
+| --- | --- |
+| `nombre` | Nombre de la estación. |
+| `recursos` | Operarios en paralelo. Entero mayor o igual que 1. |
+| `tiempo_min` | Tiempo medio de servicio, en minutos. |
 
-| Archivo | Qué hace |
-|---|---|
-| `src/main.py` | Lee los escenarios, corre la simulación y escribe CSV y gráfico. Es lo único que hace falta ejecutar. |
-| `src/linea.py` | El modelo: llegadas, recorrido de cada silla por las estaciones, medición de indicadores y resumen frente a la teoría. |
-| `src/teoria.py` | Fórmulas M/M/c (ecuaciones 7–14) y el tiempo de flujo teórico de la línea. |
-| `src/animacion.py` | Animación del taller para una réplica: mesas, operarios, material en espera y depósito. Usa el modelo de `linea.py` sin cambiarlo; solo le pide que anote cada cambio de estado. |
-| `src/graficos.py` | Gráfico de barras simulado vs. teórico. Se usa desde `main.py`, pero también se puede correr solo: `python src/graficos.py --resumen resumen-e2.csv --salida graficos/e2.png`. |
-| `tests/` | Pruebas: teoría frente a las tablas del informe, reproducibilidad con semilla, Ley de Little, escenarios y línea de comandos. |
+Para crear un escenario, copiar `escenarios/base.json`, cambiar los valores y pasar el
+archivo con `--config`. El programa rechaza campos faltantes, tipos incorrectos, nombres
+repetidos, valores negativos y estaciones sin operarios.
 
-## Supuestos de implementación
+## 6. Estructura del proyecto
 
-- Unidad interna: minutos. La tasa de llegadas se expresa en sillas/h.
-- `duracion_h` es el horizonte total de cada réplica e **incluye** el calentamiento. Con 1 000 h y 100 h de calentamiento, se miden 900 h.
-- Cada réplica arranca con la línea vacía y usa su propia semilla, derivada de `semilla` con `numpy.random.SeedSequence`, así que los resultados se pueden reproducir.
-- La utilización y `Lq` se calculan como promedios ponderados en el tiempo dentro de la ventana medida. `Wq` promedia las sillas que entraron a la cola de la estación después del calentamiento.
-- Las sillas terminadas son las que salen de acabado dentro de la ventana medida. El tiempo de flujo promedia las sillas que llegaron después del calentamiento y terminaron antes del fin.
-- Cuello de botella: la estación con mayor utilización simulada.
+```text
+03-simulacion/
+├── main.py                  # entrada: simula uno o varios escenarios
+├── animacion.py             # entrada de la animación
+├── requirements.txt
+├── modelo/
+│   ├── configuracion.py     # lee y valida los JSON
+│   ├── simulacion.py        # Estacion y SimulacionLinea (SimPy)
+│   └── teoria.py            # fórmulas M/M/c
+├── vista/
+│   ├── tablas.py            # salida de la terminal
+│   ├── graficas.py          # gráficos PNG
+│   └── animacion.py         # dibujo del taller
+├── controlador/
+│   └── controlador.py       # une modelo y vista
+├── escenarios/
+│   ├── base.json
+│   ├── e2.json
+│   └── e3.json
+├── tests/
+├── fuentes/                 # fuente Inter y su licencia
+├── graficos/
+├── resultados-base.csv
+├── resumen-base.csv
+└── resultados-base.md
+```
 
-## Resultados de la línea base
+- **modelo:** calcula. No imprime ni dibuja.
+- **vista:** muestra tablas, gráficos y animación. No simula.
+- **controlador:** lee escenarios, llama al modelo y pasa los resultados a la vista.
 
-Ver [`resultados-base.md`](resultados-base.md), que trae el texto listo para la sección 7.1 del informe.
+## 7. Información adicional
+
+**Funcionalidades:**
+
+- Simulación de la línea con estaciones, colas FIFO y varios operarios.
+- Comparación automática con la teoría M/M/c.
+- Detección del cuello de botella por utilización.
+- Resultados en CSV y gráficos PNG.
+- Validación de escenarios antes de ejecutar.
+- Animación del taller para una réplica.
+
+**Resultados de la línea base:**
+
+| Estación | ρ simulado | ρ teórico | Wq simulado (min) | Wq teórico (min) |
+| --- | :---: | :---: | :---: | :---: |
+| Corte | 39,8 % | 40,0 % | 5,3 | 5,3 |
+| Lijado | 49,8 % | 50,0 % | 10,0 | 10,0 |
+| Ensamblaje | 75,1 % | 75,0 % | 45,4 | 45,0 |
+| Acabado | 60,0 % | 60,0 % | 18,2 | 18,0 |
+
+El cuello de botella es **Ensamblaje**. El detalle y el texto de apoyo están en
+[`resultados-base.md`](resultados-base.md).
+
+![Utilización y espera por estación](graficos/base.png)
+
+**Escenarios:**
+
+| Archivo | Cambio respecto de la base |
+| --- | --- |
+| `escenarios/base.json` | Línea base. |
+| `escenarios/e2.json` | Ensamblaje con 2 operarios. |
+| `escenarios/e3.json` | Ensamblaje con tiempo medio de 10 min. |

@@ -1,14 +1,4 @@
-"""Animated view of the chair workshop over a few hours.
-
-It runs one replica of the same model as main.py (linea.py), records every
-change in the queues and workers, and plays it back as a workshop drawing:
-a workbench per station with its workers, the material waiting in front of
-it, and the finished chairs piling up in the warehouse.
-
-  python src/animacion.py                                  # base scenario, 8 h
-  python src/animacion.py --config escenarios/e2.json --horas 12
-  python src/animacion.py --guardar graficos/base.gif      # save instead of showing
-"""
+"""Vista animada del taller de sillas."""
 
 import argparse
 import sys
@@ -17,20 +7,15 @@ from pathlib import Path
 
 import matplotlib
 
-from linea import cargar_config, simular_replica
-
-FUENTES = Path(__file__).resolve().parents[1] / "fuentes"  # Inter, bundled so it looks the same everywhere
+from modelo.configuracion import ErrorConfiguracion, cargar_escenario
+from modelo.simulacion import SimulacionLinea
 
 RAIZ = Path(__file__).resolve().parents[1]
+FUENTES = RAIZ / "fuentes"
 
 
 def estados_en(traza, nombres, tiempos):
-    """State of each station at each sample time.
-
-    `traza` holds (time, station, queue, busy) changes. At a sample time the
-    state is the one left by the last change at or before it (0 before any).
-    Returns {station: {"cola": [...], "ocupados": [...]}}, one value per time.
-    """
+    """Estado de cada estación en cada instante de muestra."""
     estados = {}
     for nombre in nombres:
         cambios = sorted((c for c in traza if c[1] == nombre), key=lambda c: c[0])
@@ -47,44 +32,43 @@ def estados_en(traza, nombres, tiempos):
 
 
 def utilizacion_teorica(cfg, est):
-    """rho = lambda / (servers * mu); above 1 the station cannot keep up."""
+    """Ocupación teórica: lambda / (operarios * mu)."""
     return cfg["tasa_llegadas_h"] / (est["recursos"] * 60 / est["tiempo_min"])
 
 
-# ---------- Palette: one meaning per colour ----------
+# ---------- Colores y medidas del dibujo ----------
 
-PARED = "#efe7da"            # workshop wall
-PISO = "#d8c19c"             # wooden floor
-PISO_TABLA = "#cbb187"       # floorboard joints
-MESA = "#8a5a33"             # workbench top
-MESA_CANTO = "#6b4226"       # bench edge and legs
-TARIMA = "#b48f5e"           # pallet under waiting material
-MADERA_CRUDA = "#c08a52"     # raw plank
-MADERA_CORTADA = "#d6a467"   # cut parts
-MADERA_LIJADA = "#ecca95"    # sanded parts and unfinished chair
-MADERA_LAQUEADA = "#6e3816"  # lacquered chair
-VETA = "#5a3a1a"             # wood outline
-TRABAJANDO = "#2f6ea5"       # worker busy
-LIBRE = "#a5adb5"            # worker idle
+PARED = "#efe7da"
+PISO = "#d8c19c"
+PISO_TABLA = "#cbb187"
+MESA = "#8a5a33"
+MESA_CANTO = "#6b4226"
+TARIMA = "#b48f5e"
+MADERA_CRUDA = "#c08a52"
+MADERA_CORTADA = "#d6a467"
+MADERA_LIJADA = "#ecca95"
+MADERA_LAQUEADA = "#6e3816"
+VETA = "#5a3a1a"
+TRABAJANDO = "#2f6ea5"
+LIBRE = "#a5adb5"
 PIEL = "#eec39d"
-CARTEL = "#2f3e4c"           # station sign
-CUELLO = "#b8322a"           # bottleneck: the only red on screen
+CARTEL = "#2f3e4c"
+CUELLO = "#b8322a"
 TEXTO = "#2b2622"
 TEXTO_SUAVE = "#6d625a"
 
-# Layout in drawing units (the axes keep a 1:1 aspect so shapes look real).
-ANCHO_ESTACION = 3.4         # horizontal space per station
-ANCHO_LLEGADA = 2.4          # arrival area on the left
-ANCHO_DEPOSITO = 2.6         # warehouse on the right
-Y_PISO = 0.55                # where the wall meets the floor
-COLUMNAS_COLA, FILAS_COLA = 3, 2           # material drawn on each pallet; the rest is "+n"
-COLUMNAS_DEPOSITO, FILAS_DEPOSITO = 3, 4   # finished chairs drawn in the warehouse
+ANCHO_ESTACION = 3.4
+ANCHO_LLEGADA = 2.4
+ANCHO_DEPOSITO = 2.6
+Y_PISO = 0.55
+COLUMNAS_COLA, FILAS_COLA = 3, 2
+COLUMNAS_DEPOSITO, FILAS_DEPOSITO = 3, 4
 
 
-# ---------- Drawings. Each returns the artists it added, hidden until shown. ----------
+# ---------- Dibujos ----------
 
 def _sombra():
-    """Soft drop shadow: offset down-right, translucent."""
+    """Sombra suave para dar volumen."""
     from matplotlib import patheffects
     return [patheffects.SimplePatchShadow(offset=(2, -2), alpha=0.18), patheffects.Normal()]
 
@@ -98,12 +82,12 @@ def _rect(ax, x, y, w, h, color, borde=VETA, visible=False, sombra=False, **kw):
 
 
 def dibujar_tablones(ax, x, y, visible=False):
-    """Three raw planks stacked: the material that arrives with an order."""
+    """Tres tablones apilados."""
     return [_rect(ax, x, y + k * 0.12, 0.66, 0.1, MADERA_CRUDA, visible=visible) for k in range(3)]
 
 
 def dibujar_piezas(ax, x, y, color):
-    """Cut parts of one chair: seat and backrest boards plus two legs."""
+    """Asiento, respaldo y dos patas."""
     return [_rect(ax, x, y, 0.36, 0.09, color),
             _rect(ax, x, y + 0.13, 0.36, 0.09, color),
             _rect(ax, x + 0.44, y, 0.08, 0.4, color),
@@ -111,30 +95,29 @@ def dibujar_piezas(ax, x, y, color):
 
 
 def dibujar_silla(ax, x, y, color, escala=1.0, visible=False):
-    """A chair seen from the side: front leg, seat, tall back post and two backrest rails."""
+    """Silla de perfil."""
     s = escala
-    partes = [_rect(ax, x, y, 0.07 * s, 0.32 * s, color, visible=visible),                       # front leg
-              _rect(ax, x, y + 0.3 * s, 0.5 * s, 0.07 * s, color, visible=visible),              # seat
-              _rect(ax, x + 0.43 * s, y, 0.07 * s, 0.8 * s, color, visible=visible),             # back post
-              _rect(ax, x + 0.24 * s, y + 0.66 * s, 0.26 * s, 0.07 * s, color, visible=visible),  # top rail
-              _rect(ax, x + 0.24 * s, y + 0.5 * s, 0.26 * s, 0.05 * s, color, visible=visible)]   # lower rail
+    partes = [_rect(ax, x, y, 0.07 * s, 0.32 * s, color, visible=visible),                        # pata delantera
+              _rect(ax, x, y + 0.3 * s, 0.5 * s, 0.07 * s, color, visible=visible),               # asiento
+              _rect(ax, x + 0.43 * s, y, 0.07 * s, 0.8 * s, color, visible=visible),              # pata trasera
+              _rect(ax, x + 0.24 * s, y + 0.66 * s, 0.26 * s, 0.07 * s, color, visible=visible),  # travesaño superior
+              _rect(ax, x + 0.24 * s, y + 0.5 * s, 0.26 * s, 0.05 * s, color, visible=visible)]   # travesaño inferior
     return partes
 
 
 def dibujar_material(ax, etapa, x, y):
-    """What a chair looks like before station number `etapa` (0 = first)."""
+    """Aspecto de la pieza antes de la estación indicada."""
     if etapa == 0:
         return dibujar_tablones(ax, x, y)
     if etapa == 1:
         return dibujar_piezas(ax, x, y, MADERA_CORTADA)
     if etapa == 2:
         return dibujar_piezas(ax, x, y, MADERA_LIJADA)
-    # From the fourth station on the piece is already a chair waiting for its finish.
     return dibujar_silla(ax, x, y, MADERA_LIJADA, escala=0.78)
 
 
 class Operario:
-    """A worker behind the bench: blue and reaching for the piece when busy, grey and idle otherwise."""
+    """Operario del banco: azul si trabaja, gris si espera material."""
 
     def __init__(self, ax, x, y):
         from matplotlib.patches import Circle, FancyBboxPatch
@@ -152,9 +135,9 @@ class Operario:
         self.cuerpo.set_facecolor(color)
         for brazo, lado in zip(self.brazos, (-1, 1)):
             brazo.set_color(color)
-            if ocupado:  # both hands down on the piece in front of the body
+            if ocupado:
                 brazo.set_data([x + lado * 0.2, x + lado * 0.08], [y + 0.55, y + 0.12])
-            else:        # arms hanging at the sides
+            else:
                 brazo.set_data([x + lado * 0.24, x + lado * 0.27], [y + 0.55, y + 0.2])
 
 
@@ -164,7 +147,7 @@ def mostrar(artistas, visible):
 
 
 def dibujar_fondo(ax, ancho, alto_min, alto_max):
-    """Wall and wooden floor: the only texture is the floorboards."""
+    """Pared y piso de madera."""
     _rect(ax, 0, Y_PISO, ancho, alto_max - Y_PISO, PARED, borde="none", visible=True, zorder=-10)
     _rect(ax, 0, alto_min, ancho, Y_PISO - alto_min, PISO, borde="none", visible=True, zorder=-10)
     y = Y_PISO - 0.5
@@ -175,15 +158,15 @@ def dibujar_fondo(ax, ancho, alto_min, alto_max):
 
 
 def dibujar_tarima(ax, cx, y, ancho=2.7):
-    """Low pallet on the floor where material waits its turn."""
+    """Tarima baja para el material en espera."""
     _rect(ax, cx - ancho / 2, y, ancho, 0.1, TARIMA, visible=True, sombra=True)
-    for k in range(3):  # three blocks underneath: both ends and the middle
+    for k in range(3):
         bx = cx - ancho / 2 + 0.05 + k * (ancho - 0.4) / 2
         _rect(ax, bx, y - 0.1, 0.3, 0.1, TARIMA, visible=True)
 
 
 def dibujar_mesa(ax, cx):
-    """Workbench: thick top with a darker front edge, two legs."""
+    """Mesa de trabajo con sus patas."""
     _rect(ax, cx - 1.38, 1.06, 2.76, 0.18, MESA, borde=MESA_CANTO, visible=True, sombra=True)
     _rect(ax, cx - 1.38, 1.0, 2.76, 0.07, MESA_CANTO, borde="none", visible=True)
     for lx in (cx - 1.25, cx + 1.11):
@@ -191,7 +174,7 @@ def dibujar_mesa(ax, cx):
 
 
 def dibujar_cartel(ax, cx, texto, color):
-    """Sign hanging from the ceiling with the station data."""
+    """Cartel con el nombre y los datos de la estación."""
     from matplotlib.patches import FancyBboxPatch
     for dx in (-0.8, 0.8):
         ax.plot([cx + dx, cx + dx], [3.85, 4.4], color=TEXTO_SUAVE, lw=0.8)
@@ -206,14 +189,14 @@ def dibujar_cartel(ax, cx, texto, color):
     return cartel, textos
 
 
-# ---------- Animation ----------
+# ---------- Animación ----------
 
-TAMANO_DISENO = (14, 8.6)  # inches; text sizes below are chosen for this window size
-FONDO = "#faf7f2"           # figure and chart background, the same warm white
+TAMANO_DISENO = (14, 8.6)
+FONDO = "#faf7f2"
 
 
 def _usar_fuente():
-    """Register the bundled Inter font; fall back to Matplotlib's default if it is missing."""
+    """Registra la fuente Inter incluida; si falta, usa la de Matplotlib."""
     from matplotlib import font_manager
     archivos = sorted(FUENTES.glob("*.ttf"))
     for archivo in archivos:
@@ -223,34 +206,34 @@ def _usar_fuente():
 
 
 class Escena:
-    """Everything `animar` needs: the figure, the per-frame update and the text rescaler."""
+    """Figura, dibujo por cuadro y ajuste de textos."""
 
     def __init__(self, figura, dibujar, tiempos, carteles, ajustar_texto):
         self.figura = figura
-        self.dibujar = dibujar            # dibujar(k) paints frame k
-        self.tiempos = tiempos            # simulated minute of each frame
-        self.carteles = carteles          # [(sign patch, [title, detail])], used by the tests
+        self.dibujar = dibujar
+        self.tiempos = tiempos
+        self.carteles = carteles
         self.ajustar_texto = ajustar_texto
 
 
 def armar(cfg, horas, paso_min, semilla):
-    """Simulate `horas` hours from an empty workshop and build the scene to animate."""
+    """Simula desde un taller vacío y prepara la escena."""
     import matplotlib.pyplot as plt
     from matplotlib.patches import Patch
     from matplotlib.text import Text
     from matplotlib.ticker import FuncFormatter, MaxNLocator, MultipleLocator
 
-    # The animation shows the workshop from opening time, so no warm-up is discarded.
+    # La animación arranca con el taller vacío, sin calentamiento.
     corrida = dict(cfg, duracion_h=horas, calentamiento_h=0)
     traza, salidas = [], []
-    simular_replica(corrida, semilla, traza=traza, salidas=salidas)
+    SimulacionLinea(corrida).correr_replica(semilla, traza=traza, salidas=salidas)
 
     estaciones = cfg["estaciones"]
     n = len(estaciones)
     nombres = [e["nombre"] for e in estaciones]
     tiempos = [k * paso_min for k in range(int(horas * 60 / paso_min) + 1)]
     estados = estados_en(traza, nombres, tiempos)
-    terminadas = [bisect_right(salidas, t) for t in tiempos]  # chairs finished by each time
+    terminadas = [bisect_right(salidas, t) for t in tiempos]
     rhos = [utilizacion_teorica(cfg, e) for e in estaciones]
     cuello = max(range(n), key=lambda i: rhos[i])
 
@@ -259,7 +242,7 @@ def armar(cfg, horas, paso_min, semilla):
     taller = fig.add_axes((0.02, 0.31, 0.96, 0.57))
     curvas = fig.add_axes((0.06, 0.07, 0.78, 0.17), facecolor=FONDO)
 
-    # --- Workshop: orders arrive on the left, warehouse on the right.
+    # Taller: pedidos a la izquierda y depósito a la derecha.
     x_deposito = ANCHO_LLEGADA + n * ANCHO_ESTACION
     ancho = x_deposito + ANCHO_DEPOSITO
     y_min, y_max = -2.45, 4.4
@@ -272,7 +255,7 @@ def armar(cfg, horas, paso_min, semilla):
     taller.text(1.2, 3.55, "Pedidos", ha="center", fontsize=11, weight="semibold")
     taller.text(1.2, 3.18, f"llegan {cfg['tasa_llegadas_h']:g} sillas/h\nen promedio", ha="center",
                 va="top", fontsize=8.5, color=TEXTO_SUAVE)
-    dibujar_tarima(taller, 1.2, -1.75, ancho=1.6)  # same floor line as the stations' pallets
+    dibujar_tarima(taller, 1.2, -1.75, ancho=1.6)
     mostrar(dibujar_tablones(taller, 0.87, -1.65), True)
     mostrar(dibujar_tablones(taller, 0.87, -1.29), True)
 
@@ -290,7 +273,7 @@ def armar(cfg, horas, paso_min, semilla):
             taller.text(cx, 2.72, "cuello de botella", ha="center", fontsize=9, weight="semibold",
                         color=CUELLO)
 
-        # Workers stand behind the bench; the piece they work on rests on it.
+        # Los operarios van detrás de la mesa y la pieza descansa sobre ella.
         separacion = 2.4 / est["recursos"]
         personas, piezas = [], []
         for s in range(est["recursos"]):
@@ -298,13 +281,13 @@ def armar(cfg, horas, paso_min, semilla):
             personas.append(Operario(taller, px, 1.28))
             piezas.append(dibujar_material(taller, i, px - 0.32, 1.25))
         dibujar_mesa(taller, cx)
-        for pieza in piezas:  # keep the piece in front of the bench top
+        for pieza in piezas:
             for parte in pieza:
                 parte.set_zorder(3)
         operarios.append(personas)
         en_banco.append(piezas)
 
-        # Material waiting on a pallet in front of the bench.
+        # Material esperando en la tarima.
         dibujar_tarima(taller, cx, -1.75)
         espera = []
         for k in range(COLUMNAS_COLA * FILAS_COLA):
@@ -313,14 +296,14 @@ def armar(cfg, horas, paso_min, semilla):
         en_cola.append(espera)
         esperando.append(taller.text(cx, -2.2, "", ha="center", fontsize=9, color=TEXTO_SUAVE))
 
-        # Flow arrow towards the next bench (or the warehouse).
+        # Flecha hacia la siguiente estación o el depósito.
         fx = cx + ANCHO_ESTACION / 2
         taller.annotate("", xy=(fx + 0.22, 1.9), xytext=(fx - 0.22, 1.9),
                         arrowprops={"arrowstyle": "-|>", "color": TEXTO_SUAVE, "lw": 1.4})
     taller.annotate("", xy=(ANCHO_LLEGADA + 0.22, 1.9), xytext=(ANCHO_LLEGADA - 0.22, 1.9),
                     arrowprops={"arrowstyle": "-|>", "color": TEXTO_SUAVE, "lw": 1.4})
 
-    # --- Warehouse with finished, lacquered chairs.
+    # Depósito con las sillas terminadas.
     xd = x_deposito + ANCHO_DEPOSITO / 2
     taller.text(xd, 3.55, "Depósito", ha="center", fontsize=11, weight="semibold")
     contador = taller.text(xd, 3.18, "", ha="center", va="top", fontsize=8.5, color=TEXTO_SUAVE)
@@ -330,7 +313,7 @@ def armar(cfg, horas, paso_min, semilla):
         deposito.append(dibujar_silla(taller, x_deposito + 0.25 + col * 0.78, 1.75 - fila * 1.05,
                                       MADERA_LAQUEADA, escala=0.85))
 
-    # --- Header: scenario on the left, colour key in the middle, clock and totals on the right.
+    # Encabezado: escenario, leyenda, reloj y totales.
     fig.text(0.03, 0.952, "Taller de sillas", fontsize=17, weight="semibold")
     fig.text(0.03, 0.915, cfg["nombre"], fontsize=10.5, color=TEXTO_SUAVE)
     reloj = fig.text(0.97, 0.952, "", ha="right", fontsize=17, weight="semibold")
@@ -341,7 +324,7 @@ def armar(cfg, horas, paso_min, semilla):
     fig.legend(handles=claves, loc="center", bbox_to_anchor=(0.5, 0.93), ncol=3, frameon=False,
                fontsize=9.5, handlelength=1.1, handleheight=1.1, columnspacing=1.8)
 
-    # --- Below: chairs waiting at each station. Queues are whole numbers, so steps, not slopes.
+    # Abajo: sillas esperando en cada estación. La cola es entera, por eso escalones.
     colores = ["#4f6d7a", "#a08455", "#6f8f5a", "#7a5c8c", "#5c7a8c", "#8c5c6a"]
     horas_eje = [t / 60 for t in tiempos]
     lineas = []
@@ -350,7 +333,7 @@ def armar(cfg, horas, paso_min, semilla):
         lineas.append(curvas.plot([], [], drawstyle="steps-post", label=nombre,
                                   color=CUELLO if es_cuello else colores[i % len(colores)],
                                   lw=2.4 if es_cuello else 1.5, zorder=3 if es_cuello else 2)[0])
-    relleno = [None]  # area under the bottleneck queue, redrawn every frame
+    relleno = [None]
     curvas.set_xlim(0, horas)
     curvas.set_ylim(0, max(max(estados[nb]["cola"]) for nb in nombres) + 1)
     curvas.yaxis.set_major_locator(MaxNLocator(integer=True, nbins=5))
@@ -368,8 +351,7 @@ def armar(cfg, horas, paso_min, semilla):
     curvas.legend(loc="upper left", bbox_to_anchor=(1.02, 1.05), fontsize=9, frameon=False,
                   title="Estación", title_fontsize=9, alignment="left")
 
-    # Every text keeps its design size at TAMANO_DISENO and scales with the window,
-    # so a smaller window shrinks text together with the drawing instead of overflowing.
+    # El texto conserva su tamaño de diseño y se escala con la ventana.
     bases = [(t, t.get_fontsize()) for t in fig.findobj(Text)]
 
     def ajustar_texto(_evento=None):
@@ -411,7 +393,7 @@ def armar(cfg, horas, paso_min, semilla):
 
 
 def animar(cfg, horas, paso_min, semilla, guardar=None):
-    """Animate the workshop every `paso_min` minutes; save a GIF or open a window."""
+    """Anima el taller cada `paso_min` minutos y abre una ventana o guarda un GIF."""
     import matplotlib.pyplot as plt
     from matplotlib.animation import FuncAnimation, PillowWriter
 
@@ -427,31 +409,34 @@ def animar(cfg, horas, paso_min, semilla, guardar=None):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Animate the chair workshop.")
+    parser = argparse.ArgumentParser(description="Anima el taller de sillas.")
     parser.add_argument("--config", type=Path, default=RAIZ / "escenarios" / "base.json",
-                        help="scenario JSON file (default: escenarios/base.json)")
+                        help="escenario JSON (por defecto: escenarios/base.json)")
     parser.add_argument("--horas", type=float, default=8,
-                        help="simulated hours to show (default: 8)")
+                        help="horas simuladas a mostrar (por defecto: 8)")
     parser.add_argument("--paso", type=float, default=5,
-                        help="simulated minutes per frame (default: 5)")
-    parser.add_argument("--semilla", type=int, help="seed (default: the scenario's)")
-    parser.add_argument("--guardar", type=Path, help="save as GIF instead of opening a window")
+                        help="minutos simulados por cuadro (por defecto: 5)")
+    parser.add_argument("--semilla", type=int, help="semilla (por defecto: la del escenario)")
+    parser.add_argument("--guardar", type=Path, help="guarda un GIF en vez de abrir la ventana")
     args = parser.parse_args(argv)
 
     if args.horas <= 0 or args.paso <= 0:
         print("Error: --horas y --paso deben ser mayores que 0", file=sys.stderr)
         return 1
+    if args.semilla is not None and args.semilla < 0:
+        print("Error: --semilla debe ser mayor o igual que 0", file=sys.stderr)
+        return 1
     try:
-        cfg = cargar_config(args.config)
+        cfg = cargar_escenario(args.config)
     except FileNotFoundError:
         print(f"Error: no existe el escenario {args.config}", file=sys.stderr)
         return 1
-    except (OSError, ValueError) as error:
+    except (ErrorConfiguracion, OSError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
 
     if args.guardar:
-        matplotlib.use("Agg")  # no window needed to write the file
+        matplotlib.use("Agg")
     semilla = cfg["semilla"] if args.semilla is None else args.semilla
     animar(cfg, args.horas, args.paso, semilla, args.guardar)
     if args.guardar:

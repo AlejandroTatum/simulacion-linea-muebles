@@ -1,6 +1,6 @@
 # Resultados de la línea base (E1)
 
-Fuente: `resumen-base.csv` y `resultados-base.csv`, generados con `python src/main.py` (semilla 2026, 30 réplicas de 1 000 h con 100 h de calentamiento). Gráfico: `graficos/base.png`.
+Fuente: `resumen-base.csv` y `resultados-base.csv`, generados con `python main.py` (semilla 2026, 30 réplicas de 1 000 h con 100 h de calentamiento). Gráfico: `graficos/base.png`.
 
 Este documento contiene el texto listo para pegar en el informe del grupo (Google Docs). Las tablas y la figura siguen la numeración del informe de avance.
 

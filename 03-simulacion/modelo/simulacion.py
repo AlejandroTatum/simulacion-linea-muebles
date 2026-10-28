@@ -1,0 +1,205 @@
+"""Motor de simulación de la línea de sillas."""
+
+import numpy as np
+import pandas as pd
+import simpy
+
+from modelo.teoria import mmc
+
+
+class Estacion:
+    """Estación con su recurso SimPy y los contadores de la ventana medida."""
+
+    def __init__(self, entorno, nombre, recursos, tiempo_min, inicio, traza=None):
+        self.nombre = nombre
+        self.recursos = recursos
+        self.tiempo_min = tiempo_min
+        self.recurso = simpy.Resource(entorno, capacity=recursos)
+        self.inicio = inicio
+        self.traza = traza
+
+        self.ultimo_cambio = 0.0
+        self.en_cola = 0
+        self.ocupados = 0
+        self.area_cola = 0.0
+        self.area_ocupados = 0.0
+        self.esperas = []
+
+    def acumular(self, ahora):
+        """Acumula el área del estado actual desde el último cambio."""
+        desde = max(self.ultimo_cambio, self.inicio)
+        if ahora > desde:
+            self.area_cola += self.en_cola * (ahora - desde)
+            self.area_ocupados += self.ocupados * (ahora - desde)
+        self.ultimo_cambio = ahora
+
+    def registrar_cambio(self, ahora, cola=0, ocupados=0):
+        """Anota una llegada o salida de la cola y de los operarios."""
+        self.acumular(ahora)
+        self.en_cola += cola
+        self.ocupados += ocupados
+        if self.traza is not None:
+            self.traza.append((ahora, self.nombre, self.en_cola, self.ocupados))
+
+    def metricas(self, ventana):
+        """Promedios de utilización y cola durante la ventana medida."""
+        return {
+            "estacion": self.nombre,
+            "recursos": self.recursos,
+            "utilizacion": self.area_ocupados / (self.recursos * ventana),
+            "lq": self.area_cola / ventana,
+            "wq_min": float(np.mean(self.esperas)) if self.esperas else float("nan"),
+        }
+
+
+class SimulacionLinea:
+    """Una línea en serie con llegadas de Poisson y tiempos exponenciales."""
+
+    def __init__(self, escenario):
+        self.escenario = escenario
+
+    def correr_replica(self, semilla, traza=None, salidas=None):
+        """Simula una réplica y devuelve sus indicadores."""
+        rng = np.random.default_rng(semilla)
+        entorno = simpy.Environment()
+        inicio = self.escenario["calentamiento_h"] * 60
+        fin = self.escenario["duracion_h"] * 60
+        ventana = fin - inicio
+
+        estaciones = [
+            Estacion(entorno, estacion["nombre"], estacion["recursos"],
+                     estacion["tiempo_min"], inicio, traza)
+            for estacion in self.escenario["estaciones"]
+        ]
+        registro = {"terminadas": 0, "flujos": [], "salidas": salidas}
+
+        media_llegadas = 60 / self.escenario["tasa_llegadas_h"]
+        entorno.process(self._llegadas(entorno, estaciones, rng, inicio, registro, media_llegadas))
+        entorno.run(until=fin)
+
+        filas = []
+        for estacion in estaciones:
+            estacion.acumular(fin)
+            filas.append(estacion.metricas(ventana))
+
+        return {
+            "estaciones": filas,
+            "terminadas": registro["terminadas"],
+            "throughput_h": registro["terminadas"] / (ventana / 60),
+            "flujo_min": float(np.mean(registro["flujos"])) if registro["flujos"] else float("nan"),
+        }
+
+    def _silla(self, entorno, estaciones, rng, inicio, registro):
+        """Recorre una silla por todas las estaciones."""
+        llegada = entorno.now
+        for estacion in estaciones:
+            entrada = entorno.now
+            estacion.registrar_cambio(entorno.now, cola=1)
+            with estacion.recurso.request() as turno:
+                yield turno
+                estacion.registrar_cambio(entorno.now, cola=-1, ocupados=1)
+                if entrada >= inicio:
+                    estacion.esperas.append(entorno.now - entrada)
+                yield entorno.timeout(rng.exponential(estacion.tiempo_min))
+                estacion.registrar_cambio(entorno.now, ocupados=-1)
+
+        if entorno.now >= inicio:
+            registro["terminadas"] += 1
+            if registro["salidas"] is not None:
+                registro["salidas"].append(entorno.now)
+        if llegada >= inicio:
+            registro["flujos"].append(entorno.now - llegada)
+
+    def _llegadas(self, entorno, estaciones, rng, inicio, registro, media_min):
+        """Genera una silla nueva cada tiempo exponencial."""
+        while True:
+            yield entorno.timeout(rng.exponential(media_min))
+            entorno.process(self._silla(entorno, estaciones, rng, inicio, registro))
+
+    def correr_todas(self):
+        """Corre todas las réplicas y devuelve los datos por réplica y el resumen."""
+        semillas = np.random.SeedSequence(self.escenario["semilla"]).generate_state(
+            self.escenario["replicas"])
+        filas = []
+
+        for numero, semilla in enumerate(semillas, start=1):
+            resultado = self.correr_replica(int(semilla))
+            for estacion in resultado["estaciones"]:
+                filas.append({
+                    "escenario": self.escenario["nombre"],
+                    "replica": numero,
+                    "semilla": int(semilla),
+                    **estacion,
+                    "sillas_terminadas": resultado["terminadas"],
+                    "throughput_h": resultado["throughput_h"],
+                    "flujo_min": resultado["flujo_min"],
+                })
+
+        replicas = pd.DataFrame(filas)
+        return replicas, self._resumen(replicas)
+
+    def _resumen(self, replicas):
+        """Compara cada estación con su valor teórico M/M/c."""
+        lam = self.escenario["tasa_llegadas_h"]
+        filas = []
+
+        for estacion in self.escenario["estaciones"]:
+            datos = replicas[replicas["estacion"] == estacion["nombre"]]
+            mu = 60 / estacion["tiempo_min"]
+            fila = {
+                "estacion": estacion["nombre"],
+                "recursos": estacion["recursos"],
+                "tiempo_min": estacion["tiempo_min"],
+                "capacidad_h": estacion["recursos"] * mu,
+                "utilizacion_media": datos["utilizacion"].mean(),
+                "utilizacion_desv": datos["utilizacion"].std(),
+                "lq_media": datos["lq"].mean(),
+                "lq_desv": datos["lq"].std(),
+                "wq_min_media": datos["wq_min"].mean(),
+                "wq_min_desv": datos["wq_min"].std(),
+            }
+            try:
+                teoria = mmc(lam, mu, estacion["recursos"])
+                fila.update({
+                    "utilizacion_teorica": teoria["utilizacion"],
+                    "lq_teorico": teoria["lq"],
+                    "wq_min_teorico": teoria["wq_min"],
+                })
+            except ValueError:
+                fila.update({"utilizacion_teorica": float("nan"),
+                             "lq_teorico": float("nan"),
+                             "wq_min_teorico": float("nan")})
+
+            fila["error_utilizacion_pct"] = _error_pct(
+                fila["utilizacion_media"], fila["utilizacion_teorica"])
+            fila["error_lq_pct"] = _error_pct(fila["lq_media"], fila["lq_teorico"])
+            fila["error_wq_pct"] = _error_pct(fila["wq_min_media"], fila["wq_min_teorico"])
+            filas.append(fila)
+
+        return pd.DataFrame(filas)
+
+
+def _error_pct(simulado, teorico):
+    if simulado is None or teorico is None:
+        return float("nan")
+    simulado, teorico = float(simulado), float(teorico)
+    if np.isnan(simulado) or np.isnan(teorico) or teorico == 0:
+        return float("nan")
+    return abs(simulado - teorico) / teorico * 100
+
+
+def resumir_linea(replicas):
+    """Promedios de producción y flujo, sin repetir filas por estación."""
+    linea = replicas.drop_duplicates("replica")
+    return {
+        "sillas_terminadas": float(linea["sillas_terminadas"].mean()),
+        "sillas_desv": float(linea["sillas_terminadas"].std()),
+        "throughput_h": float(linea["throughput_h"].mean()),
+        "flujo_min": float(linea["flujo_min"].mean()),
+        "flujo_desv": float(linea["flujo_min"].std()),
+    }
+
+
+def cuello_de_botella(resumen):
+    """Estación con mayor utilización simulada."""
+    return resumen.loc[resumen["utilizacion_media"].idxmax(), "estacion"]

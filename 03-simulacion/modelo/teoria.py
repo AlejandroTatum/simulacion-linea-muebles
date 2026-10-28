@@ -1,14 +1,10 @@
-"""Theoretical M/M/c reference values (report equations (7)-(14))."""
+"""Fórmulas M/M/c y tiempo de flujo teórico de la línea."""
 
 from math import factorial
 
 
 def mmc(tasa_llegadas, tasa_servicio, servidores):
-    """Steady-state metrics of an M/M/c station.
-
-    Rates are in chairs per hour; times are returned in minutes.
-    With servidores=1 the result equals the M/M/1 formulas.
-    """
+    """Indicadores de una estación M/M/c. Tasas por hora; tiempos en minutos."""
     lam, mu, c = tasa_llegadas, tasa_servicio, servidores
     rho = lam / (c * mu)
     if rho >= 1:
@@ -31,17 +27,12 @@ def mmc(tasa_llegadas, tasa_servicio, servidores):
 
 
 def flujo_teorico_min(tasa_llegadas, estaciones):
-    """Theoretical time a chair spends in the whole line, in minutes.
-
-    In a stable series line every station receives the same arrival rate, so
-    the total time is the sum of each station's W (queue wait + service).
-    Returns None when any station is unstable (its queue grows without bound).
-    """
+    """Suma el tiempo medio de cada estación; None si alguna es inestable."""
     total = 0.0
-    for est in estaciones:
-        mu = 60 / est["tiempo_min"]
+    for estacion in estaciones:
+        mu = 60 / estacion["tiempo_min"]
         try:
-            total += mmc(tasa_llegadas, mu, est["recursos"])["w_min"]
+            total += mmc(tasa_llegadas, mu, estacion["recursos"])["w_min"]
         except ValueError:
             return None
     return total

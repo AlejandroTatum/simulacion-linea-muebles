@@ -1,6 +1,6 @@
 import pytest
 
-from teoria import mmc
+from modelo.teoria import mmc
 
 
 def test_mm1_matches_assembly_reference_values():
@@ -34,12 +34,12 @@ def test_unstable_station_is_rejected():
 
 
 def test_line_flow_time_sums_station_times():
-    from teoria import flujo_teorico_min
+    from modelo.teoria import flujo_teorico_min
     estaciones = [{"recursos": 1, "tiempo_min": t} for t in (8, 10, 15, 12)]
     # W = 1 / (mu - lambda): 13.33 + 20 + 60 + 30 minutes
     assert abs(flujo_teorico_min(3, estaciones) - 123.333333) < 1e-5
 
 
 def test_line_flow_time_is_none_when_a_station_is_unstable():
-    from teoria import flujo_teorico_min
+    from modelo.teoria import flujo_teorico_min
     assert flujo_teorico_min(5, [{"recursos": 1, "tiempo_min": 15}]) is None
