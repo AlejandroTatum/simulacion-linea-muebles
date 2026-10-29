@@ -1,4 +1,4 @@
-escenario,replica,semilla,estacion,recursos,utilizacion,lq,wq_min,cola_utilizacion,cola_max,cola_p90,sillas_terminadas,throughput_h,flujo_min
+escenario,replica,semilla,estacion,recursos,utilizacion,lq,wq_min,cola_utilizacion,cola_max,cola_p90,muebles_terminados,throughput_h,flujo_min
 E1 - Base,1,2727543821,Corte,1,0.382086,0.22946,4.738371,0.148567,11.0,1.0,2615,2.905556,117.32404
 E1 - Base,1,2727543821,Lijado,1,0.474531,0.393854,8.123365,0.224669,9.0,1.0,2615,2.905556,117.32404
 E1 - Base,1,2727543821,Ensamblaje,1,0.744465,2.296409,47.457354,0.546732,20.0,7.0,2615,2.905556,117.32404

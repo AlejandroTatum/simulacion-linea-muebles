@@ -1,4 +1,4 @@
-escenario,replica,semilla,estacion,recursos,utilizacion,lq,wq_min,cola_utilizacion,cola_max,cola_p90,sillas_terminadas,throughput_h,flujo_min
+escenario,replica,semilla,estacion,recursos,utilizacion,lq,wq_min,cola_utilizacion,cola_max,cola_p90,muebles_terminados,throughput_h,flujo_min
 E3 - Ensamblaje en 10 min,1,2727543821,Corte,1,0.385123,0.227566,4.575048,0.14552,5.0,1.0,2688,2.986667,80.412547
 E3 - Ensamblaje en 10 min,1,2727543821,Lijado,1,0.488429,0.437374,8.786714,0.23098,9.0,2.0,2688,2.986667,80.412547
 E3 - Ensamblaje en 10 min,1,2727543821,Ensamblaje,1,0.502366,0.476751,9.574035,0.247918,9.0,2.0,2688,2.986667,80.412547
