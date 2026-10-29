@@ -20,7 +20,7 @@ class ErrorConfiguracion(ValueError):
 
 
 def _es_numero(valor):
-    """Finite real number; JSON accepts NaN and Infinity, which no parameter can take."""
+    """Número real finito; JSON acepta NaN e Infinity, que ningún parámetro admite."""
     return isinstance(valor, Real) and not isinstance(valor, bool) and math.isfinite(valor)
 
 

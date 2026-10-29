@@ -13,6 +13,8 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 from matplotlib.ticker import MaxNLocator  # noqa: E402
 
+from modelo.simulacion import cuello_de_botella  # noqa: E402
+
 RAIZ = Path(__file__).resolve().parents[1]
 
 AZUL = "#2f6ea5"
@@ -20,6 +22,8 @@ NARANJA = "#e07b39"
 VERDE = "#4f7d5a"
 ROJO = "#b8322a"
 GRIS = "#6d625a"
+
+MAX_COLA = 6  # longitudes mayores se agrupan en "6+"
 
 
 def _usar_fuente():
@@ -41,11 +45,6 @@ def _guardar(figura, ruta_png):
     ruta_png.parent.mkdir(parents=True, exist_ok=True)
     figura.savefig(ruta_png, dpi=200, bbox_inches="tight")
     plt.close(figura)
-
-
-def _cuello(resumen):
-    """Estación con mayor utilización simulada."""
-    return resumen.loc[resumen["utilizacion_media"].idxmax(), "estacion"]
 
 
 def _colores(resumen, cuello):
@@ -109,7 +108,7 @@ def _distribucion_cola(traza, nombre, desde, hasta):
 def graficar(ruta_resumen, ruta_png):
     """Utilización, espera y cola media: simulación frente a teoría."""
     resumen = pd.read_csv(ruta_resumen)
-    cuello = _cuello(resumen)
+    cuello = cuello_de_botella(resumen)
     colores = _colores(resumen, cuello)
     x = np.arange(len(resumen))
     ancho = 0.38
@@ -144,7 +143,7 @@ def graficar(ruta_resumen, ruta_png):
 def graficar_cola(traza, resumen, escenario, ruta_png):
     """Evolución temporal de la cola en la primera réplica."""
     nombres = list(resumen["estacion"])
-    cuello = _cuello(resumen)
+    cuello = cuello_de_botella(resumen)
     inicio_h = float(escenario["calentamiento_h"])
     fin_h = float(escenario["duracion_h"])
     filas = math.ceil(len(nombres) / 2)
@@ -188,7 +187,7 @@ def graficar_cola(traza, resumen, escenario, ruta_png):
 def graficar_utilizacion_cola(resumen, ruta_png):
     """Porcentaje del tiempo con cola y longitud media de la cola."""
     nombres = list(resumen["estacion"])
-    cuello = _cuello(resumen)
+    cuello = cuello_de_botella(resumen)
     colores = _colores(resumen, cuello)
     x = np.arange(len(nombres))
     ancho = 0.38
@@ -231,18 +230,14 @@ def graficar_distribucion_cola(traza, resumen, escenario, ruta_png):
     distribuciones = [_distribucion_cola(traza, nombre, inicio, fin) for nombre in nombres]
     maximo = max((max(dist) for dist in distribuciones), default=0)
 
-    if maximo <= 6:
+    if maximo <= MAX_COLA:
         categorias = list(range(maximo + 1))
+        filas = [[dist.get(k, 0.0) * 100 for k in categorias] for dist in distribuciones]
     else:
-        categorias = list(range(6)) + ["6+"]
-
-    filas = []
-    for dist in distribuciones:
-        if maximo <= 6:
-            filas.append([dist.get(k, 0.0) * 100 for k in range(maximo + 1)])
-        else:
-            filas.append([dist.get(k, 0.0) * 100 for k in range(6)]
-                         + [sum(v for k, v in dist.items() if k >= 6) * 100])
+        categorias = list(range(MAX_COLA)) + [f"{MAX_COLA}+"]
+        filas = [[dist.get(k, 0.0) * 100 for k in range(MAX_COLA)]
+                 + [sum(v for k, v in dist.items() if k >= MAX_COLA) * 100]
+                 for dist in distribuciones]
 
     colores = plt.cm.Blues(np.linspace(0.18, 0.95, len(categorias)))
     y = np.arange(len(nombres))
@@ -281,7 +276,7 @@ def graficar_distribucion_cola(traza, resumen, escenario, ruta_png):
 def graficar_flujo(resumen, escenario, ruta_png):
     """Tiempo de servicio y espera que componen el flujo de un mueble."""
     nombres = list(resumen["estacion"])
-    cuello = _cuello(resumen)
+    cuello = cuello_de_botella(resumen)
     x = np.arange(len(nombres))
     servicio = resumen["tiempo_min"].to_numpy(dtype=float)
     espera = resumen["wq_min_media"].to_numpy(dtype=float)

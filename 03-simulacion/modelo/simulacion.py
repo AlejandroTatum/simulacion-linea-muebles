@@ -196,10 +196,8 @@ class SimulacionLinea:
                     "cola_utilizacion_teorica": teoria["prob_cola"],
                 })
             except ValueError:
-                fila.update({"utilizacion_teorica": float("nan"),
-                             "lq_teorico": float("nan"),
-                             "wq_min_teorico": float("nan"),
-                             "cola_utilizacion_teorica": float("nan")})
+                fila.update(dict.fromkeys(("utilizacion_teorica", "lq_teorico", "wq_min_teorico",
+                                           "cola_utilizacion_teorica"), float("nan")))
 
             fila["error_utilizacion_pct"] = _error_pct(
                 fila["utilizacion_media"], fila["utilizacion_teorica"])
