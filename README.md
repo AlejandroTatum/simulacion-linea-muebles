@@ -2,6 +2,8 @@
 
 Proyecto grupal: simulación de eventos discretos de una línea de fabricación de sillas (corte → lijado → ensamblaje → acabado), con modelo matemático, programa en Python, experimentos y un informe académico en formato IEEE.
 
+El modelo teórico es **M/M/1** (un operario por estación) y se ejecutan tres escenarios: **E1** (base), **E2** (ensamblaje en 12 min) y **E3** (ensamblaje en 10 min).
+
 > **Regla de oro:** cada integrante trabaja **solo en su carpeta** y sube sus cambios con un Pull Request. Nadie edita la carpeta de otro sin avisar. La única excepción es actualizar la tabla de estados de este README.
 
 ---

@@ -25,6 +25,13 @@ modelo M/M/1 y encontrar la estación que limita la producción.
 - Un operario por estación (`c = 1`) en todos los escenarios.
 - No hay fallas, turnos, transporte ni retrabajo.
 
+**Teoría utilizada: M/M/1.** Cada estación tiene un solo operario (`c = 1`) en todos los
+escenarios, así que se compara con M/M/1 y no con M/M/c ni con Erlang C. M/M/1 es el caso
+particular de M/M/c con `c = 1`. El simulador conserva la capacidad de trabajar con más
+operarios (`recursos > 1`) y la animación los dibuja, pero la teoría del informe solo
+evalúa una persona por estación: si se configura `recursos > 1`, la simulación corre
+igual y la comparación teórica muestra `—` (ver sección 8).
+
 **Parámetros de la línea base:**
 
 | Estación | Operarios `ci` | Tiempo medio `ti` (min/silla) |
@@ -43,6 +50,8 @@ Tasa de llegadas: `λ = 3` sillas/h. Cada réplica simula 1 000 h y descarta las
 | `Lq` | Sillas esperando en cola | `ρ² / (1 − ρ)` |
 | `Wq` | Espera media en cola | `Lq / λ` |
 | `W` | Tiempo en la estación | `Wq + 1/μ` |
+| `L` | Sillas en el sistema (cola + servicio) | `λ · W` |
+| `P(N > 1)` | Probabilidad de que haya al menos una silla esperando | `ρ²` |
 
 ## 2. Tecnologías utilizadas
 
@@ -166,6 +175,32 @@ Esto ejecuta `escenarios/base.json` y escribe:
 | `graficos/flujo-base.png` | Composición del tiempo de flujo por estación. |
 | `graficos/escenarios.png` | Comparación de escenarios (solo si se simulan varios). |
 
+Los nombres de salida salen del archivo JSON: `base.json` produce `resultados-base.csv`,
+`resumen-base.csv`, `linea-base.csv` y `graficos/*-base.png`; `e2.json` produce `*-e2.*`,
+y así. La única excepción es `escenarios.png`: **solo se crea si se pasan dos o más
+escenarios en la misma corrida** (ver 4.3).
+
+**Cómo se calculan las cifras:**
+
+- La ventana medida es `duracion_h − calentamiento_h`: 900 h en los tres escenarios.
+- `ρ`, `Lq`, la utilización de la cola y el percentil 90 se ponderan por tiempo.
+- `Wq` promedia solo las sillas que entraron a la estación después del calentamiento.
+- Cada réplica usa una semilla distinta derivada de `semilla`; con la misma semilla los
+  resultados se repiten.
+- Los CSV guardan promedio y desviación estándar de las 30 réplicas.
+
+**Columnas de `resumen-*.csv`:** identificación (`estacion`, `recursos`, `tiempo_min`,
+`capacidad_h`), simulación (`utilizacion_media/desv`, `lq_media/desv`,
+`wq_min_media/desv`, `cola_utilizacion_media/desv`, `cola_max_media`, `cola_p90_media`),
+teoría (`utilizacion_teorica`, `lq_teorico`, `wq_min_teorico`,
+`cola_utilizacion_teorica`), errores (`error_utilizacion_pct`, `error_lq_pct`,
+`error_wq_pct`) y Ley de Little (`lq_little`, `error_little_pct`).
+
+**Columnas de `linea-*.csv`:** `sillas_terminadas`, `sillas_desv`, `throughput_h`,
+`flujo_min`, `flujo_desv`, `escenario`, `cuello`, `throughput_teorico_h`,
+`error_throughput_pct`, `flujo_teorico_min`, `error_flujo_pct`, `lq_total`,
+`lq_little_total`, `error_little_total_pct`.
+
 **Qué muestra cada gráfico:**
 
 - **`base.png`**: utilización de cada estación y espera media `Wq`, con la teoría M/M/1 al lado.
@@ -187,7 +222,7 @@ Esto ejecuta `escenarios/base.json` y escribe:
 | `cola_p90` | Percentil 90 de la longitud de la cola, ponderado por tiempo. |
 | `cola_max` | Longitud máxima observada durante la ventana medida. |
 | `cola_utilizacion_teorica` | `P(N > 1) = ρ²` del modelo M/M/1. |
-| `lq_little` | `λ_efectiva · Wq` para comprobar la Ley de Little. |
+| `lq_little` | `λ_efectiva · Wq / 60` para comprobar la Ley de Little. |
 | `error_little_pct` | Error porcentual entre `Lq` medido y el de la Ley de Little. |
 
 En la terminal se muestra el resumen por estación, la producción por hora, el tiempo de
@@ -212,8 +247,22 @@ corte, lijado y acabado de E1. Los resultados llevan el nombre del archivo:
 `resumen-e2.csv`, `linea-e2.csv`, `graficos/e2.png`, etc.
 
 `--salida` cambia la carpeta de resultados y gráficos. Los escenarios se validan todos
-antes de simular; si uno tiene un error, no se escribe nada. Cuando se simulan varios
-escenarios en la misma corrida también se genera `graficos/escenarios.png`.
+antes de simular; si uno tiene un error, no se escribe nada.
+
+**Cómo se genera `escenarios.png`:**
+
+```bash
+python main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.json
+```
+
+Se escribe en `graficos/escenarios.png` **solo cuando hay dos o más escenarios en esa
+corrida**; si se ejecutan por separado, cada uno genera sus PNG pero no la comparación.
+El gráfico tiene tres paneles (ρ, `Lq` y `Wq`) y compara **ensamblaje y acabado**, con
+barras para la simulación y un rombo negro para la teoría M/M/1.
+
+En E2 ensamblaje y acabado empatan en 60 % de utilización, así que el rótulo del cuello
+de botella muestra el que quedó levemente arriba en la simulación (ensamblaje). En E3 el
+cuello pasa a acabado porque ensamblaje baja a 50 %.
 
 ### 4.4 Ejecutar las pruebas
 
@@ -236,7 +285,8 @@ python animacion.py --guardar graficos/base.gif
 ```
 
 La animación usa una sola réplica y sirve para explicar la dinámica; los números del
-informe salen de `main.py`. Las opciones principales son:
+informe salen de `main.py`. Dibuja un operario por cada `recursos` de la estación y la
+ocupación del cartel es la teórica (`λ/(c·μ)`), no la simulada. Las opciones principales son:
 
 - `--horas`: horas simuladas a mostrar (por defecto 8).
 - `--paso`: minutos simulados por cuadro (por defecto 5).
@@ -269,29 +319,62 @@ Si el error persiste, copiá el mensaje completo y el comando que ejecutaste.
 ## 5. Configuración
 
 Los escenarios están en `escenarios/`. No hay parámetros de la línea escritos dentro del
-código.
+código: todo lo que cambia entre corridas está en el JSON.
 
-| Campo | Significado |
-| --- | --- |
-| `nombre` | Nombre que aparece en la terminal y en los resultados. |
-| `tasa_llegadas_h` | `λ`, sillas que llegan por hora. |
-| `estaciones` | Lista ordenada de estaciones. |
-| `replicas` | Cantidad de réplicas independientes. |
-| `duracion_h` | Horas simuladas por réplica, incluido el calentamiento. |
-| `calentamiento_h` | Horas iniciales que no se miden. |
-| `semilla` | Semilla base para repetir los resultados. |
+**Parámetros del escenario:**
 
-Cada estación tiene:
+| Campo JSON | Símbolo | Significado | Unidad | Valor en E1 |
+| --- | :---: | --- | :---: | :---: |
+| `nombre` | — | Nombre que aparece en la terminal y en los resultados. | — | `E1 - Base` |
+| `tasa_llegadas_h` | `λ` | Tasa de llegadas de Poisson. | sillas/h | 3 |
+| `replicas` | `r` | Réplicas independientes por escenario. | — | 30 |
+| `duracion_h` | `T` | Duración de cada réplica, incluido el calentamiento. | h | 1 000 |
+| `calentamiento_h` | `Tc` | Horas iniciales que se descartan. | h | 100 |
+| `semilla` | `s0` | Semilla base; cada réplica deriva la suya. | — | 2026 |
+| `estaciones` | — | Lista ordenada del recorrido de la silla. | — | 4 |
 
-| Campo | Significado |
-| --- | --- |
-| `nombre` | Nombre de la estación. |
-| `recursos` | Operarios en paralelo. En los escenarios del informe siempre es 1. |
-| `tiempo_min` | Tiempo medio de servicio, en minutos. |
+**Parámetros de cada estación:**
+
+| Campo JSON | Símbolo | Significado | Unidad | E1 (corte/lijado/ensamblaje/acabado) |
+| --- | :---: | --- | :---: | :---: |
+| `nombre` | — | Nombre de la estación. | — | Corte, Lijado, Ensamblaje, Acabado |
+| `recursos` | `c` | Operarios en paralelo. | personas | 1 en todas |
+| `tiempo_min` | `ti` | Tiempo medio de servicio exponencial. | min/silla | 8, 10, 15, 12 |
+
+**Indicadores teóricos (M/M/1) que se calculan a partir de esos parámetros:**
+
+| Símbolo | Fórmula | Significado |
+| --- | :---: | --- |
+| `μ` | `60 / ti` | Tasa de servicio de una persona (sillas/h). |
+| `Ci` | `c · μ` | Capacidad de la estación (sillas/h). |
+| `ρ` | `λ / μ` | Utilización (con `c = 1`; en general `λ / (c·μ)`). |
+| `Lq` | `ρ² / (1 − ρ)` | Sillas esperando en promedio. |
+| `Wq` | `Lq / λ` | Espera media en cola (se muestra en minutos). |
+| `W` | `Wq + 1/μ` | Tiempo total en la estación. |
+| `L` | `λ · W` | Sillas en el sistema (cola + servicio). |
+| `P(N > 1)` | `ρ²` | Fracción del tiempo con al menos una silla esperando. |
+| Error % | `abs(sim − teórico) / teórico × 100` | Separación entre simulación y teoría. |
+
+**Para probar otros resultados no se toca Python:**
+
+- Otro tiempo de proceso: cambiar `tiempo_min` de la estación.
+- Otra demanda: cambiar `tasa_llegadas_h`.
+- Más o menos réplicas, otra duración o calentamiento: cambiar `replicas`,
+  `duracion_h` o `calentamiento_h`.
+- Otra semilla: cambiar `semilla` (los resultados dejan de ser comparables con los del
+  informe).
+- Más operarios: poner `recursos > 1`. La simulación y la animación lo soportan; la
+  comparación teórica sale `—` porque la teoría es M/M/1.
 
 Para crear un escenario, copiar `escenarios/base.json`, cambiar los valores y pasar el
-archivo con `--config`. El programa rechaza campos faltantes, tipos incorrectos, nombres
-repetidos, valores negativos y estaciones sin operarios.
+archivo con `--config`. Antes de simular se rechazan campos faltantes o desconocidos,
+tipos incorrectos, nombres repetidos, valores negativos, `NaN`, `Infinity`, tasas no
+positivas, estaciones vacías y `calentamiento_h >= duracion_h`. Si un escenario falla, no
+se escribe ningún archivo.
+
+Si una estación queda inestable (`ρ ≥ 1`), el programa **simula igual** (la cola crece),
+pero la teoría se muestra como `—` y el flujo como "sin teoría M/M/1": no se ajusta nada
+para que coincida.
 
 ## 6. Estructura del proyecto
 
@@ -316,9 +399,10 @@ repetidos, valores negativos y estaciones sin operarios.
 │   └── e3.json
 ├── tests/
 ├── fuentes/                 # fuente Inter y su licencia
-├── graficos/
+├── graficos/               # PNG por escenario y escenarios.png
 ├── resultados-base.csv
 ├── resumen-base.csv
+├── linea-base.csv
 └── resultados-base.md
 ```
 
@@ -391,3 +475,65 @@ todo lo que llega.
 El error máximo de E2 (4,07 % en `Wq` de ensamblaje) está dentro del 5 %; el resto de
 las estaciones queda por debajo del 3,3 %. Los valores por estación están en
 `resumen-e2.csv` y `resumen-e3.csv`, y la Ley de Little en `linea-e2.csv` y `linea-e3.csv`.
+
+## 8. Notas y decisiones del modelo
+
+**Por qué M/M/1**
+
+- Todos los escenarios usan **un operario por estación** (`c = 1`), así que la teoría
+  correcta es M/M/1.
+- M/M/1 es el caso particular de M/M/c con `c = 1`; no se usa Erlang C.
+- La cola ocupada teórica es `P(N > 1) = ρ²`. Antes se calculaba con Erlang C × ρ, pero
+  para `c = 1` ambas expresiones son la misma.
+- Si se configura `recursos > 1`, el programa **simula** y la **animación** dibuja varios
+  operarios, pero la teoría M/M/1 no aplica: la comparación muestra `—` y el flujo
+  "sin teoría M/M/1". No hay escenario del informe con más de un operario.
+
+**Nombres y archivos**
+
+- E1 vive en `escenarios/base.json` (nombre interno `E1 - Base`) para conservar
+  `resumen-base.csv` y la serie de resultados ya presentada. Las salidas usan el nombre
+  del archivo: `base`, `e2`, `e3`.
+- `graficos/escenarios.png` **solo** se genera cuando se pasan dos o más escenarios en la
+  misma corrida. Compara ensamblaje y acabado y marca la teoría con un rombo. Si la línea
+  no tiene esas estaciones, usa las del primer escenario.
+- `linea-*.csv` es nuevo: resume producción, flujo y Ley de Little de toda la línea.
+
+**Qué mide cada indicador**
+
+- `ρ`, `Lq`, `cola_utilizacion` y `cola_p90` se ponderan por tiempo sobre la ventana
+  medida (900 h), no sobre sillas individuales.
+- `Wq` promedia solo las sillas que entraron a la estación después del calentamiento; el
+  flujo, solo las que terminaron después del calentamiento.
+- `cola_max` es el máximo observado en la ventana; `cola_p90` es el percentil 90
+  ponderado por tiempo.
+- `cola-*.png` y `distribucion-cola-*.png` muestran **solo la réplica 1** (la traza); el
+  resto de los indicadores usa las 30 réplicas.
+- `replicas-*.png` no es un promedio: muestra la dispersión de `ρ`, `Lq` y `Wq` entre
+  réplicas.
+- Ley de Little: `lq_little = throughput × Wq / 60` por estación, y `lq_little_total`
+  usa la suma de las estaciones en `linea-*.csv`.
+
+**Cuello de botella y empates**
+
+- Se elige la estación con mayor `utilizacion_media`; si hay empate, gana la primera en el
+  orden de la línea.
+- En E2 ensamblaje y acabado empatan en 60 % teórico: la simulación deja ensamblaje
+  apenas arriba (59,839 % vs. 59,836 %, una diferencia de 0,003 puntos). En E3 el cuello
+  es acabado.
+
+**Los resultados no se fuerzan**
+
+- Ningún parámetro se ajusta para acercar la simulación a la teoría. Los errores se
+  reportan tal como salen; el mayor actual es 4,07 %.
+- Si una estación queda inestable (`ρ ≥ 1`), la simulación sigue (la cola crece), pero la
+  teoría sale `—` y el flujo "sin teoría M/M/1".
+
+**Animación y reproducibilidad**
+
+- La animación usa **una sola réplica** y sirve para explicar la dinámica; las cifras del
+  informe salen de `main.py`.
+- La simulación es reproducible: misma semilla → mismos resultados. E1 se comparó contra
+  una copia del resumen anterior y quedó idéntico.
+- Las pruebas (82) incluyen teoría M/M/1, los tres escenarios, Ley de Little, regresión y
+  gráficos: `python -m pytest`.
