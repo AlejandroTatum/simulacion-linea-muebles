@@ -12,13 +12,14 @@ from vista.graficas import (graficar, graficar_cola, graficar_distribucion_cola,
 from vista.tablas import mostrar_resumen
 
 RAIZ = Path(__file__).resolve().parents[1]
+SALIDAS = RAIZ / "salidas"
 
 
 class ControladorSimulacion:
     """Ejecuta escenarios y guarda sus resultados."""
 
-    def __init__(self, salida=RAIZ):
-        self.salida = Path(salida)
+    def __init__(self, salida=None):
+        self.salida = Path(SALIDAS if salida is None else salida)
 
     def ejecutar(self, rutas):
         """Valida todos los escenarios y después simula cada uno."""

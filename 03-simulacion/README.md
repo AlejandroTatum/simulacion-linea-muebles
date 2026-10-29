@@ -160,25 +160,27 @@ En Windows:
 ..\.venv\Scripts\python.exe main.py
 ```
 
-Esto ejecuta `escenarios/base.json` y escribe:
+Esto ejecuta `escenarios/base.json` y escribe los CSV en `salidas/` y los PNG en
+`salidas/graficos/`:
 
 | Archivo | Contenido |
 | --- | --- |
-| `resultados-base.csv` | Una fila por réplica y estación. |
-| `resumen-base.csv` | Promedios, desviación, teoría M/M/1, error porcentual y Ley de Little. |
-| `linea-base.csv` | Producción, flujo total y Ley de Little de la línea. |
-| `graficos/base.png` | Utilización y espera: simulación frente a teoría. |
-| `graficos/cola-base.png` | Evolución de la cola en el tiempo (réplica 1). |
-| `graficos/utilizacion-cola-base.png` | Tiempo con cola y longitud media de la cola. |
-| `graficos/distribucion-cola-base.png` | Distribución de la longitud de la cola. |
-| `graficos/replicas-base.png` | Variabilidad de ρ, Lq y Wq entre réplicas. |
-| `graficos/flujo-base.png` | Composición del tiempo de flujo por estación. |
-| `graficos/escenarios.png` | Comparación de escenarios (solo si se simulan varios). |
+| `salidas/resultados-base.csv` | Una fila por réplica y estación. |
+| `salidas/resumen-base.csv` | Promedios, desviación, teoría M/M/1, error porcentual y Ley de Little. |
+| `salidas/linea-base.csv` | Producción, flujo total y Ley de Little de la línea. |
+| `salidas/graficos/base.png` | Utilización y espera: simulación frente a teoría. |
+| `salidas/graficos/cola-base.png` | Evolución de la cola en el tiempo (réplica 1). |
+| `salidas/graficos/utilizacion-cola-base.png` | Tiempo con cola y longitud media de la cola. |
+| `salidas/graficos/distribucion-cola-base.png` | Distribución de la longitud de la cola. |
+| `salidas/graficos/replicas-base.png` | Variabilidad de ρ, Lq y Wq entre réplicas. |
+| `salidas/graficos/flujo-base.png` | Composición del tiempo de flujo por estación. |
+| `salidas/graficos/escenarios.png` | Comparación de escenarios (solo si se simulan varios). |
 
-Los nombres de salida salen del archivo JSON: `base.json` produce `resultados-base.csv`,
-`resumen-base.csv`, `linea-base.csv` y `graficos/*-base.png`; `e2.json` produce `*-e2.*`,
-y así. La única excepción es `escenarios.png`: **solo se crea si se pasan dos o más
-escenarios en la misma corrida** (ver 4.3).
+Los nombres de salida salen del archivo JSON: `base.json` produce
+`salidas/resultados-base.csv`, `salidas/resumen-base.csv`, `salidas/linea-base.csv` y
+`salidas/graficos/*-base.png`; `e2.json` produce `*-e2.*`, y así. La única excepción es
+`escenarios.png`: **solo se crea si se pasan dos o más escenarios en la misma corrida**
+(ver 4.3).
 
 **Cómo se calculan las cifras:**
 
@@ -247,10 +249,10 @@ python main.py --config escenarios/e2.json --salida ../04-experimentos
 
 Los tres usan un solo operario por estación (`c = 1`), `λ = 3` sillas/h y los mismos
 corte, lijado y acabado de E1. Los resultados llevan el nombre del archivo:
-`resumen-e2.csv`, `linea-e2.csv`, `graficos/e2.png`, etc.
+`salidas/resumen-e2.csv`, `salidas/linea-e2.csv`, `salidas/graficos/e2.png`, etc.
 
-`--salida` cambia la carpeta de resultados y gráficos. Los escenarios se validan todos
-antes de simular; si uno tiene un error, no se escribe nada.
+`--salida` cambia la carpeta de resultados y gráficos (por defecto `salidas/`). Los
+escenarios se validan todos antes de simular; si uno tiene un error, no se escribe nada.
 
 **Cómo se genera `escenarios.png`:**
 
@@ -258,7 +260,7 @@ antes de simular; si uno tiene un error, no se escribe nada.
 python main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.json
 ```
 
-Se escribe en `graficos/escenarios.png` **solo cuando hay dos o más escenarios en esa
+Se escribe en `salidas/graficos/escenarios.png` **solo cuando hay dos o más escenarios en esa
 corrida**; si se ejecutan por separado, cada uno genera sus PNG pero no la comparación.
 El gráfico tiene cuatro paneles: ρ, `Lq`, `Wq` y **capacidad frente a producción**
 (sillas/h). Los tres primeros comparan **ensamblaje y acabado**, con barras para la
@@ -286,7 +288,7 @@ python -m pytest 03-simulacion
 ```bash
 python animacion.py
 python animacion.py --config escenarios/e2.json --horas 24
-python animacion.py --guardar graficos/base.gif
+python animacion.py --guardar salidas/graficos/base.gif
 ```
 
 La animación usa una sola réplica y sirve para explicar la dinámica; los números del
@@ -301,7 +303,7 @@ ocupación del cartel es la teórica (`λ/(c·μ)`), no la simulada. Las opcione
 Para una prueba rápida sin abrir ventana:
 
 ```bash
-python animacion.py --horas 2 --paso 10 --guardar graficos/prueba.gif
+python animacion.py --horas 2 --paso 10 --guardar salidas/graficos/prueba.gif
 ```
 
 En Linux, para abrir la ventana hace falta Tk (`sudo apt install python3-tk`). En WSL,
@@ -341,7 +343,7 @@ réplicas o la duración.
 | `python: command not found` | El entorno virtual no está activado | `source .venv/bin/activate` o usá `../.venv/bin/python` |
 | `No module named 'simpy'` o `'matplotlib'` | Estás usando el Python del sistema | Activá el venv o usá el Python de `.venv` |
 | `No module named 'vista'` o `No such file: animacion.py` | Estás en la carpeta equivocada | `cd 03-simulacion` |
-| `TclError: no display name and no $DISPLAY` | No hay entorno gráfico | Usá `--guardar graficos/base.gif` |
+| `TclError: no display name and no $DISPLAY` | No hay entorno gráfico | Usá `--guardar salidas/graficos/base.gif` |
 | La ventana se abre y la terminal queda ocupada | La animación sigue en ejecución | Cerrá la ventana para terminar |
 | El GIF tarda mucho | Son muchos cuadros | Probá `--horas 2 --paso 10` |
 | `No such file: escenarios/e2.json` | Ruta relativa desde otra carpeta | Ejecutá desde `03-simulacion` o pasá la ruta completa |
@@ -465,10 +467,11 @@ para que coincida.
 │   └── e3.json
 ├── tests/
 ├── fuentes/                 # fuente Inter y su licencia
-├── graficos/               # PNG por escenario y escenarios.png
-├── resultados-base.csv
-├── resumen-base.csv
-├── linea-base.csv
+├── salidas/                 # resultados generados
+│   ├── resultados-base.csv  # una fila por réplica y estación
+│   ├── resumen-base.csv     # promedios, teoría M/M/1 y errores
+│   ├── linea-base.csv       # producción, flujo y Ley de Little de la línea
+│   └── graficos/            # PNG por escenario y escenarios.png
 └── resultados-base.md       # texto de la sección 7.1 (ya integrado en el informe)
 ```
 
@@ -508,17 +511,17 @@ El cuello de botella es **Ensamblaje**. Su cola permanece ocupada el 56,4 % del 
 más se acerca a su valor teórico (56,3 %). El detalle y el texto de apoyo están en
 [`resultados-base.md`](resultados-base.md).
 
-![Utilización y espera por estación](graficos/base.png)
+![Utilización y espera por estación](salidas/graficos/base.png)
 
-![Evolución de la cola en la réplica 1](graficos/cola-base.png)
+![Evolución de la cola en la réplica 1](salidas/graficos/cola-base.png)
 
-![Utilización y longitud media de la cola](graficos/utilizacion-cola-base.png)
+![Utilización y longitud media de la cola](salidas/graficos/utilizacion-cola-base.png)
 
-![Distribución de la longitud de la cola](graficos/distribucion-cola-base.png)
+![Distribución de la longitud de la cola](salidas/graficos/distribucion-cola-base.png)
 
-![Variabilidad entre réplicas](graficos/replicas-base.png)
+![Variabilidad entre réplicas](salidas/graficos/replicas-base.png)
 
-![Composición del tiempo de flujo](graficos/flujo-base.png)
+![Composición del tiempo de flujo](salidas/graficos/flujo-base.png)
 
 **Escenarios:**
 
@@ -539,7 +542,7 @@ La capacidad máxima de la línea sube de **4,00 a 5,00 sillas/h** al bajar ensa
 más de 5 sillas/h habría que mejorar también acabado. Ese es el resultado del objetivo
 5.1 y no se fuerza a que la producción observada suba cuando λ no sube.
 
-![Ensamblaje y acabado en cada escenario](graficos/escenarios.png)
+![Ensamblaje y acabado en cada escenario](salidas/graficos/escenarios.png)
 
 **Resumen numérico por escenario:**
 
@@ -551,7 +554,8 @@ más de 5 sillas/h habría que mejorar también acabado. Ese es el resultado del
 
 El error máximo de E2 (4,07 % en `Wq` de ensamblaje) está dentro del 5 %; el resto de
 las estaciones queda por debajo del 3,3 %. Los valores por estación están en
-`resumen-e2.csv` y `resumen-e3.csv`, y la Ley de Little en `linea-e2.csv` y `linea-e3.csv`.
+`salidas/resumen-e2.csv` y `salidas/resumen-e3.csv`, y la Ley de Little en
+`salidas/linea-e2.csv` y `salidas/linea-e3.csv`.
 
 ## 8. Notas y decisiones del modelo
 
@@ -569,9 +573,9 @@ las estaciones queda por debajo del 3,3 %. Los valores por estación están en
 **Nombres y archivos**
 
 - E1 vive en `escenarios/base.json` (nombre interno `E1 - Base`) para conservar
-  `resumen-base.csv` y la serie de resultados ya presentada. Las salidas usan el nombre
-  del archivo: `base`, `e2`, `e3`.
-- `graficos/escenarios.png` **solo** se genera cuando se pasan dos o más escenarios en la
+  `salidas/resumen-base.csv` y la serie de resultados ya presentada. Las salidas usan el
+  nombre del archivo: `base`, `e2`, `e3`.
+- `salidas/graficos/escenarios.png` **solo** se genera cuando se pasan dos o más escenarios en la
   misma corrida. Compara ensamblaje y acabado, marca la teoría con un rombo y agrega un
   cuarto panel con la capacidad de la línea frente a la producción simulada. Si la línea
   no tiene esas estaciones, usa las del primer escenario.

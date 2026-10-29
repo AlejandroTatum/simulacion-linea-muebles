@@ -41,7 +41,7 @@ actualizar ambas.
 ## Imágenes
 
 Las 19 gráficas de `imagenes/` son una **copia** de
-`04-experimentos/graficos/` (idénticas a las de `03-simulacion/graficos/`). Los
+`04-experimentos/graficos/` (idénticas a las de `03-simulacion/salidas/graficos/`). Los
 originales no se movieron.
 
 Si se vuelven a generar los resultados, copiar de nuevo:

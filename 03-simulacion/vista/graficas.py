@@ -413,8 +413,8 @@ def graficar_escenarios(resultados, ruta_png):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Grafica un resumen de escenario.")
-    parser.add_argument("--resumen", type=Path, default=RAIZ / "resumen-base.csv")
-    parser.add_argument("--salida", type=Path, default=RAIZ / "graficos" / "base.png")
+    parser.add_argument("--resumen", type=Path, default=RAIZ / "salidas" / "resumen-base.csv")
+    parser.add_argument("--salida", type=Path, default=RAIZ / "salidas" / "graficos" / "base.png")
     args = parser.parse_args(argv)
 
     if not args.resumen.exists():

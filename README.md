@@ -54,7 +54,7 @@ Para generar la animación como GIF, sin abrir ventana:
 
 ```bash
 cd 03-simulacion
-python animacion.py --guardar graficos/base.gif
+python animacion.py --guardar salidas/graficos/base.gif
 ```
 
 > **Nota:** si el comando `python` falla, casi siempre es porque el entorno virtual no está
@@ -144,15 +144,15 @@ demanda. Las tablas completas y los gráficos están en
 
 ```
 simulacion-linea-muebles/
-├── 01-investigacion/   # vacía: la revisión de literatura está en el informe
-├── 02-modelo/          # vacía: parámetros y ecuaciones están en el informe
+├── 01-investigacion/   # referencias bibliográficas del informe
+├── 02-modelo/          # explicación del modelo matemático
 ├── 03-simulacion/      # código Python y resultados base
 │   ├── modelo/         # configuración, simulación y teoría
 │   ├── vista/          # tablas, gráficos y animación
 │   ├── controlador/    # une modelo y vista
 │   ├── escenarios/     # archivos JSON de parámetros
 │   ├── tests/          # pruebas automáticas
-│   └── graficos/       # gráficas de la línea base
+│   └── salidas/        # CSV y graficos/ generados por la simulación
 ├── 04-experimentos/    # resultados de E1–E3, tablas y gráficos comparativos
 │   └── graficos/
 └── 05-informe/         # informe final (DOCX/PDF)

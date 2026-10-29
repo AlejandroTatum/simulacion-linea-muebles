@@ -13,8 +13,9 @@ def main(argv=None):
     parser.add_argument("--config", type=Path, nargs="+",
                         default=[RAIZ / "escenarios" / "base.json"],
                         help="uno o varios escenarios JSON (por defecto: escenarios/base.json)")
-    parser.add_argument("--salida", type=Path, default=RAIZ,
-                        help="carpeta donde se guardan CSV y gráficos")
+    parser.add_argument("--salida", type=Path, default=None,
+                        help="carpeta donde se guardan CSV y gráficos "
+                             "(por defecto: salidas/)")
     args = parser.parse_args(argv)
 
     try:
