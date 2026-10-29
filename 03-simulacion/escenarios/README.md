@@ -5,7 +5,7 @@ ningún valor de la línea escrito adentro.
 
 | Archivo | Escenario |
 | --- | --- |
-| `base.json` | E1: línea base del informe (Tabla V). |
+| `base.json` | E1: línea base del informe (Tabla III). |
 | `e2.json` | E2: ensamblaje en 12 min, un operario (`t3 = 12`). |
 | `e3.json` | E3: ensamblaje en 10 min (`t3 = 10`). |
 

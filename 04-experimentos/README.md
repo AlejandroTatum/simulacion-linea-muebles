@@ -1,6 +1,6 @@
 # Experimentos E1–E3
 
-Resultados de los tres escenarios de la Tabla VII del informe, generados con:
+Resultados de los tres escenarios de la Tabla V del informe, generados con:
 
 ```bash
 cd 03-simulacion
@@ -26,7 +26,7 @@ operario por estación**, así que la teoría aplicable es **M/M/1**.
 | Capacidad máxima de la línea (muebles/h) | 4,00 | 5,00 | 5,00 |
 | Holgura frente a λ = 3 (muebles/h) | 1,00 | 2,00 | 2,00 |
 | Error máximo frente a la teoría (ρ, Lq, Wq) | 1,3 % | 4,1 % | 3,2 % |
-| Error máximo de la Ley de Little (Lq frente a λ·Wq) | 0,17 % | 0,15 % | 0,13 % |
+| Error de la Ley de Little (línea) | 0,17 % | 0,15 % | 0,13 % |
 
 La capacidad de la línea es `min(cᵢ · μᵢ)`, la estación más lenta. Sube de 4,00 a
 5,00 muebles/h al pasar ensamblaje de 15 a 12 min, pero no vuelve a subir con 10 min porque
@@ -35,7 +35,7 @@ muebles/h porque la demanda es λ = 3: las mejoras aumentan el techo de producci
 que llega. Para superar 5 muebles/h habría que mejorar también acabado.
 
 El detalle por estación (media, desviación estándar, valor teórico, error porcentual con la
-ecuación (15) y la comprobación de la Ley de Little (6) en `lq_little` y `error_little_pct`)
+ecuación (11) y la comprobación de la Ley de Little (6) en `lq_little` y `error_little_pct`)
 está en `resumen-<escenario>.csv`. Los valores por réplica están en
 `resultados-<escenario>.csv`.
 
@@ -45,6 +45,7 @@ está en `resumen-<escenario>.csv`. Los valores por réplica están en
 | --- | --- |
 | `resumen-base.csv`, `resumen-e2.csv`, `resumen-e3.csv` | Indicadores por estación promediados en las 30 réplicas |
 | `resultados-base.csv`, `resultados-e2.csv`, `resultados-e3.csv` | Indicadores de cada réplica |
+| `linea-base.csv`, `linea-e2.csv`, `linea-e3.csv` | Producción, tiempo de flujo, capacidad de la línea y error de la Ley de Little (`error_little_total_pct`) |
 | `graficos/escenarios.png` | Comparación de los tres escenarios |
 | `graficos/<escenario>.png` | Utilización y espera simuladas frente a las teóricas |
 | `graficos/cola-*.png`, `utilizacion-cola-*.png`, `distribucion-cola-*.png` | Colas por estación |
