@@ -198,8 +198,9 @@ teoría (`utilizacion_teorica`, `lq_teorico`, `wq_min_teorico`,
 
 **Columnas de `linea-*.csv`:** `sillas_terminadas`, `sillas_desv`, `throughput_h`,
 `flujo_min`, `flujo_desv`, `escenario`, `cuello`, `throughput_teorico_h`,
-`error_throughput_pct`, `flujo_teorico_min`, `error_flujo_pct`, `lq_total`,
-`lq_little_total`, `error_little_total_pct`.
+`error_throughput_pct`, `capacidad_linea_h`, `cuello_capacidad`, `holgura_h`,
+`flujo_teorico_min`, `error_flujo_pct`, `lq_total`, `lq_little_total`,
+`error_little_total_pct`.
 
 **Qué muestra cada gráfico:**
 
@@ -212,7 +213,8 @@ teoría (`utilizacion_teorica`, `lq_teorico`, `wq_min_teorico`,
 - **`replicas-base.png`**: cajas de `ρ`, `Lq` y `Wq` para ver cuánto varían las 30 réplicas.
 - **`flujo-base.png`**: cuánto del tiempo total de una silla es servicio y cuánto es espera.
 - **`escenarios.png`**: utilización, `Lq` y `Wq` de ensamblaje y acabado en E1, E2 y E3,
-  con el valor teórico marcado con un rombo.
+  con el valor teórico marcado con un rombo, más un cuarto panel con la capacidad máxima
+  de la línea frente a la producción simulada (sillas/h).
 
 **Indicadores de cola:**
 
@@ -225,8 +227,9 @@ teoría (`utilizacion_teorica`, `lq_teorico`, `wq_min_teorico`,
 | `lq_little` | `λ_efectiva · Wq / 60` para comprobar la Ley de Little. |
 | `error_little_pct` | Error porcentual entre `Lq` medido y el de la Ley de Little. |
 
-En la terminal se muestra el resumen por estación, la producción por hora, el tiempo de
-flujo, la Ley de Little y el cuello de botella.
+En la terminal se muestra el resumen por estación, la producción por hora, la capacidad
+máxima de la línea con su cuello y holgura, el tiempo de flujo, la Ley de Little y el
+cuello de botella.
 
 ### 4.3 Ejecutar otros escenarios
 
@@ -257,8 +260,10 @@ python main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.js
 
 Se escribe en `graficos/escenarios.png` **solo cuando hay dos o más escenarios en esa
 corrida**; si se ejecutan por separado, cada uno genera sus PNG pero no la comparación.
-El gráfico tiene tres paneles (ρ, `Lq` y `Wq`) y compara **ensamblaje y acabado**, con
-barras para la simulación y un rombo negro para la teoría M/M/1.
+El gráfico tiene cuatro paneles: ρ, `Lq`, `Wq` y **capacidad frente a producción**
+(sillas/h). Los tres primeros comparan **ensamblaje y acabado**, con barras para la
+simulación y un rombo negro para la teoría M/M/1. El cuarto muestra la capacidad máxima
+de la línea (la estación más lenta) y lo que realmente produjo cada escenario.
 
 En E2 ensamblaje y acabado empatan en 60 % de utilización, así que el rótulo del cuello
 de botella muestra el que quedó levemente arriba en la simulación (ensamblaje). En E3 el
@@ -404,6 +409,8 @@ código: todo lo que cambia entre corridas está en el JSON.
 | --- | :---: | --- |
 | `μ` | `60 / ti` | Tasa de servicio de una persona (sillas/h). |
 | `Ci` | `c · μ` | Capacidad de la estación (sillas/h). |
+| `C_línea` | `min(Ci)` | Capacidad máxima sostenible de la línea: la marca la estación más lenta. |
+| `Holgura` | `C_línea − λ` | Sillas/h que la línea todavía podría absorber sin saturarse. |
 | `ρ` | `λ / μ` | Utilización (con `c = 1`; en general `λ / (c·μ)`). |
 | `Lq` | `ρ² / (1 − ρ)` | Sillas esperando en promedio. |
 | `Wq` | `Lq / λ` | Espera media en cola (se muestra en minutos). |
@@ -515,16 +522,22 @@ más se acerca a su valor teórico (56,3 %). El detalle y el texto de apoyo est�
 
 **Escenarios:**
 
-| Archivo | Escenario | Cambio respecto de E1 | Flujo teórico |
-| --- | --- | --- | :---: |
-| `escenarios/base.json` | E1 | Línea base. | 123,3 min |
-| `escenarios/e2.json` | E2 | Ensamblaje en 12 min. | 93,3 min |
-| `escenarios/e3.json` | E3 | Ensamblaje en 10 min. | 83,3 min |
+| Archivo | Escenario | Cambio respecto de E1 | Capacidad | Flujo teórico |
+| --- | --- | --- | :---: | :---: |
+| `escenarios/base.json` | E1 | Línea base. | 4,00 sillas/h | 123,3 min |
+| `escenarios/e2.json` | E2 | Ensamblaje en 12 min. | 5,00 sillas/h | 93,3 min |
+| `escenarios/e3.json` | E3 | Ensamblaje en 10 min. | 5,00 sillas/h | 83,3 min |
 
 En E1 el cuello de botella es ensamblaje (75 %). En E2, ensamblaje y acabado empatan
 al 60 %; en E3 el cuello pasa a acabado (60 %) porque ensamblaje baja al 50 %. La
 producción se mantiene en 3 sillas/h en los tres escenarios porque la línea entrega
-todo lo que llega.
+todo lo que llega: la demanda λ = 3 es menor que la capacidad.
+
+La capacidad máxima de la línea sube de **4,00 a 5,00 sillas/h** al bajar ensamblaje de
+15 a 12 min, y ya no sube al bajarlo a 10 min porque el nuevo cuello es acabado
+(5,00 sillas/h). Es decir, E3 reduce la espera pero no agrega capacidad; para producir
+más de 5 sillas/h habría que mejorar también acabado. Ese es el resultado del objetivo
+5.1 y no se fuerza a que la producción observada suba cuando λ no sube.
 
 ![Ensamblaje y acabado en cada escenario](graficos/escenarios.png)
 
@@ -559,9 +572,10 @@ las estaciones queda por debajo del 3,3 %. Los valores por estación están en
   `resumen-base.csv` y la serie de resultados ya presentada. Las salidas usan el nombre
   del archivo: `base`, `e2`, `e3`.
 - `graficos/escenarios.png` **solo** se genera cuando se pasan dos o más escenarios en la
-  misma corrida. Compara ensamblaje y acabado y marca la teoría con un rombo. Si la línea
+  misma corrida. Compara ensamblaje y acabado, marca la teoría con un rombo y agrega un
+  cuarto panel con la capacidad de la línea frente a la producción simulada. Si la línea
   no tiene esas estaciones, usa las del primer escenario.
-- `linea-*.csv` es nuevo: resume producción, flujo y Ley de Little de toda la línea.
+- `linea-*.csv` resume producción, capacidad, flujo y Ley de Little de toda la línea.
 
 **Qué mide cada indicador**
 
@@ -577,6 +591,20 @@ las estaciones queda por debajo del 3,3 %. Los valores por estación están en
   réplicas.
 - Ley de Little: `lq_little = throughput × Wq / 60` por estación, y `lq_little_total`
   usa la suma de las estaciones en `linea-*.csv`.
+
+**Capacidad y producción**
+
+- `throughput_h` es lo que la línea **produjo** en la simulación; con λ = 3 y una línea
+  estable, coincide con λ.
+- `capacidad_linea_h` es lo que la línea **puede producir como máximo**: `min(cᵢ · μᵢ)`,
+  la estación más lenta. No depende de λ.
+- `holgura_h = capacidad_linea_h − λ` indica cuánto podría crecer la demanda sin saturar
+  la línea. Si es negativa, la línea no alcanza a atender lo que llega.
+- E1 tiene capacidad 4,00 sillas/h (ensamblaje). Con E2 y E3 sube a 5,00 sillas/h; en E3
+  el límite pasa a acabado. La producción observada sigue en ~3 sillas/h porque solo
+  llegan 3 sillas/h: las mejoras elevan el techo, no la demanda.
+- `cuello_capacidad` es la estación de menor capacidad y `cuello` la de mayor utilización
+  simulada. A λ fijo son la misma estación; se reportan ambos para poder contrastarlos.
 
 **Cuello de botella y empates**
 
@@ -599,5 +627,5 @@ las estaciones queda por debajo del 3,3 %. Los valores por estación están en
   informe salen de `main.py`.
 - La simulación es reproducible: misma semilla → mismos resultados. E1 se comparó contra
   una copia del resumen anterior y quedó idéntico.
-- Las pruebas (82) incluyen teoría M/M/1, los tres escenarios, Ley de Little, regresión y
-  gráficos: `python -m pytest`.
+- Las pruebas (105) incluyen teoría M/M/1, capacidad de la línea, los tres escenarios,
+  Ley de Little, regresión y gráficos: `python -m pytest`.

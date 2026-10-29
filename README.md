@@ -127,12 +127,15 @@ python main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.js
 | Wq ensamblaje | 45,4 min | 17,3 min | 9,7 min |
 | Tiempo total de flujo | 124,0 min | 92,2 min | 82,2 min |
 | Producción | 2,998 sillas/h | 2,999 sillas/h | 2,988 sillas/h |
+| Capacidad máxima de la línea | 4,00 sillas/h | 5,00 sillas/h | 5,00 sillas/h |
 | Cuello de botella | Ensamblaje | Ensamblaje | Acabado |
 | Error máximo frente a la teoría | 1,3 % | 4,1 % | 3,2 % |
 
 Las dos mejoras de tiempo reducen la espera en ensamblaje: E2 baja la utilización a 59,8 %
-y E3 a 49,7 %, y en E3 el cuello de botella pasa a acabado. La producción no cambia porque
-solo llegan 3 sillas/h. Las tablas completas y los gráficos están en
+y E3 a 49,7 %, y en E3 el cuello de botella pasa a acabado. La capacidad de la línea sube
+de 4,00 a 5,00 sillas/h y ya no sube más porque el nuevo límite es acabado. La producción
+observada no cambia porque solo llegan 3 sillas/h: las mejoras elevan el techo, no la
+demanda. Las tablas completas y los gráficos están en
 [`04-experimentos/`](04-experimentos/README.md).
 
 ---

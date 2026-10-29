@@ -23,8 +23,16 @@ operario por estación**, así que la teoría aplicable es **M/M/1**.
 | Sillas terminadas por réplica (900 h) | 2 698,4 ± 52,7 | 2 699,4 ± 56,9 | 2 689,3 ± 40,6 |
 | Producción (sillas/h) | 2,998 | 2,999 | 2,988 |
 | Cuello de botella simulado | Ensamblaje | Ensamblaje | Acabado |
+| Capacidad máxima de la línea (sillas/h) | 4,00 | 5,00 | 5,00 |
+| Holgura frente a λ = 3 (sillas/h) | 1,00 | 2,00 | 2,00 |
 | Error máximo frente a la teoría (ρ, Lq, Wq) | 1,3 % | 4,1 % | 3,2 % |
 | Error máximo de la Ley de Little (Lq frente a λ·Wq) | 0,17 % | 0,15 % | 0,13 % |
+
+La capacidad de la línea es `min(cᵢ · μᵢ)`, la estación más lenta. Sube de 4,00 a
+5,00 sillas/h al pasar ensamblaje de 15 a 12 min, pero no vuelve a subir con 10 min porque
+el nuevo cuello es acabado (5,00 sillas/h). La producción simulada se queda en ~3
+sillas/h porque la demanda es λ = 3: las mejoras aumentan el techo de producción, no lo
+que llega. Para superar 5 sillas/h habría que mejorar también acabado.
 
 El detalle por estación (media, desviación estándar, valor teórico, error porcentual con la
 ecuación (15) y la comprobación de la Ley de Little (6) en `lq_little` y `error_little_pct`)

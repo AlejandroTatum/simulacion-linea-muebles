@@ -1,2 +1,2 @@
-sillas_terminadas,sillas_desv,throughput_h,flujo_min,flujo_desv,escenario,cuello,throughput_teorico_h,error_throughput_pct,flujo_teorico_min,error_flujo_pct,lq_total,lq_little_total,error_little_total_pct
-2698.433333,52.650889,2.998259,123.959249,10.301079,E1 - Base,Ensamblaje,3,0.058025,123.333333,0.507499,3.952482,3.945816,0.16895
+sillas_terminadas,sillas_desv,throughput_h,flujo_min,flujo_desv,escenario,cuello,throughput_teorico_h,error_throughput_pct,capacidad_linea_h,cuello_capacidad,holgura_h,flujo_teorico_min,error_flujo_pct,lq_total,lq_little_total,error_little_total_pct
+2698.433333,52.650889,2.998259,123.959249,10.301079,E1 - Base,Ensamblaje,3,0.058025,4.0,Ensamblaje,1.0,123.333333,0.507499,3.952482,3.945816,0.16895

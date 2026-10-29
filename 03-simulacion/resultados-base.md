@@ -50,9 +50,12 @@ La cola también se analiza como porcentaje del tiempo en que está ocupada, es 
 ## Escenarios E2 y E3
 
 Los dos escenarios de mejora cambian solo el ensamblaje, siempre con un operario: E2 lo
-lleva a 12 min y E3 a 10 min. La producción se mantiene en 3 sillas/h en ambos porque la
-línea sigue entregando todo lo que llega. La Tabla compara el ensamblaje con el acabado,
-que es la estación que queda como límite cuando el ensamblaje deja de serlo.
+lleva a 12 min y E3 a 10 min. La capacidad máxima de la línea (`min(Ci)`) sube de 4,00 a
+5,00 sillas/h con E2 y se queda en 5,00 con E3, porque el nuevo límite pasa a ser acabado.
+La producción observada se mantiene en 3 sillas/h en ambos porque la línea sigue
+entregando todo lo que llega (λ = 3): las mejoras elevan el techo, no la demanda. La Tabla
+compara el ensamblaje con el acabado, que es la estación que queda como límite cuando el
+ensamblaje deja de serlo.
 
 | Escenario | Ensamblaje: ρ / Lq / Wq | Acabado: ρ / Lq / Wq | Flujo simulado (teórico) |
 | --- | :---: | :---: | :---: |
@@ -74,4 +77,4 @@ El código genera, además de la Figura 1, las siguientes figuras de apoyo:
 - `graficos/distribucion-cola-base.png`: distribución del tiempo según la cantidad de sillas esperando.
 - `graficos/replicas-base.png`: cajas de `ρ`, `Lq` y `Wq` para las 30 réplicas.
 - `graficos/flujo-base.png`: composición del tiempo total de flujo (servicio más espera) por estación.
-- `graficos/escenarios.png`: comparación de ensamblaje y acabado (ρ, `Lq` y `Wq`) en E1, E2 y E3, con el valor teórico de cada uno.
+- `graficos/escenarios.png`: comparación de ensamblaje y acabado (ρ, `Lq` y `Wq`) en E1, E2 y E3, con el valor teórico de cada uno, más la capacidad de la línea frente a la producción simulada.
