@@ -3,11 +3,12 @@
 import argparse
 import copy
 import json
+import multiprocessing
 import sys
-import threading
 from pathlib import Path
 
 import matplotlib
+from matplotlib.widgets import TextBox
 
 from modelo.configuracion import ErrorConfiguracion, cargar_escenario, validar_escenario
 from modelo.simulacion import SimulacionLinea, comparar_linea, cuello_de_botella
@@ -89,13 +90,93 @@ def _formato(valor, decimales=2):
     return "—" if valor != valor else f"{valor:.{decimales}f}"  # NaN != NaN
 
 
+class CajaLigera(TextBox):
+    """Casilla de texto que se repinta sola, sin redibujar toda la ventana.
+
+    El TextBox de Matplotlib 3.11 llama a `canvas.draw()` (~175 ms en este panel) en cada
+    tecla, clic, `set_val`, al dejar de escribir y cada vez que el mouse entra o sale de
+    la casilla por el cambio de color. Con 10 casillas eso congelaba la ventana. Acá se
+    repinta solo el eje de la casilla (blit) y el color no cambia al pasar el mouse.
+
+    Se sobrescriben `_rendercursor` y `stop_typing`, que son privados o llevan el
+    `canvas.draw()` incrustado: no hay un gancho público para cambiarlo. Por eso
+    requirements.txt fija Matplotlib; al actualizarlo hay que revisar ambos métodos.
+    """
+
+    def __init__(self, ax, label, initial="", *, color=".95", **kwargs):
+        # hovercolor igual a color: _motion no encuentra nada que cambiar y no redibuja.
+        super().__init__(ax, label, initial, color=color, hovercolor=color, **kwargs)
+
+    def _repintar(self):
+        canvas = self.ax.get_figure(root=True).canvas
+        if canvas.supports_blit:
+            self.ax.draw_artist(self.ax)
+            canvas.blit(self.ax.bbox)
+        else:
+            canvas.draw_idle()
+
+    def _rendercursor(self):
+        # Mismo cálculo de la posición del cursor que Matplotlib 3.11.2; solo cambia el
+        # redibujado final.
+        fig = self.ax.get_figure(root=True)
+        if fig._get_renderer() is None:
+            fig.canvas.draw()  # la primera vez no hay renderer para medir el texto
+
+        text = self.text_disp.get_text()
+        widthtext = text[:self.cursor_index]
+
+        bb_text = self.text_disp.get_window_extent()
+        self.text_disp.set_text(widthtext or ",")
+        bb_widthtext = self.text_disp.get_window_extent()
+
+        if bb_text.y0 == bb_text.y1:
+            bb_text.y0 -= bb_widthtext.height / 2
+            bb_text.y1 += bb_widthtext.height / 2
+        elif not widthtext:
+            bb_text.x1 = bb_text.x0
+        else:
+            bb_text.x1 = bb_text.x0 + bb_widthtext.width
+
+        self.cursor.set(
+            segments=[[(bb_text.x1, bb_text.y0), (bb_text.x1, bb_text.y1)]],
+            visible=True)
+        self.text_disp.set_text(text)
+        self._repintar()
+
+    def stop_typing(self):
+        # Mismo cierre que Matplotlib 3.11.2 (libera los atajos de teclado y avisa el
+        # submit); solo cambia el redibujado. Cada clic llama a stop_typing en todas las
+        # casillas, así que solo repinta la que tenía el cursor a la vista.
+        estaba_escribiendo = self.cursor.get_visible()
+        if self.capturekeystrokes:
+            self._on_stop_typing()
+            self._on_stop_typing = None
+            avisar = True
+        else:
+            avisar = False
+        self.capturekeystrokes = False
+        self.cursor.set_visible(False)
+        if estaba_escribiendo:
+            self._repintar()
+        if avisar and self.eventson:
+            self._observers.process("submit", self.text)
+
+
+def _correr_en_proceso(escenario, salida):
+    """Cuerpo del proceso de Simular; va a nivel de módulo para que "spawn" lo encuentre."""
+    try:
+        salida.send(("datos", Panel._calcular(escenario)))
+    except Exception as error:  # noqa: BLE001 - se muestra en el panel
+        salida.send(("error", str(error)))
+
+
 class Panel:
     """Parámetros a la izquierda; a la derecha, el taller animado arriba y los resultados abajo."""
 
     def __init__(self, base, ruta_guardado=GUARDADO):
         import matplotlib.pyplot as plt
         from matplotlib.lines import Line2D
-        from matplotlib.widgets import Button, TextBox
+        from matplotlib.widgets import Button
 
         self.base = base
         self.ruta_guardado = Path(ruta_guardado)
@@ -106,7 +187,8 @@ class Panel:
         self.escena = None
         self._ultimo_cuadro = []
         self._calculo = None
-        self._resultado_calculo = {}
+        self._canal_calculo = None
+        self._escenario_calculo = None
         self._temporizador_calculo = None
 
         self.figura = plt.figure(figsize=(16, 9), facecolor="#faf7f2")
@@ -122,7 +204,7 @@ class Panel:
 
         def caja(clave, x, y, ancho=0.06):
             eje = fig.add_axes([x, y, ancho, 0.036])
-            self.cajas[clave] = TextBox(eje, "", initial=self.iniciales[clave])
+            self.cajas[clave] = CajaLigera(eje, "", initial=self.iniciales[clave])
 
         y = 0.83
         fig.text(0.02, y + 0.012, "Llegadas por hora (λ)", fontsize=11, color=TEXTO)
@@ -211,18 +293,24 @@ class Panel:
             self._avisar("Ya hay una simulación en curso; esperá a que termine.")
             return None
         self._avisar(aviso + " (la ventana sigue respondiendo)")
-        self._resultado_calculo = {"escenario": escenario}
+        if self._temporizador_calculo is not None:
+            # El cálculo anterior ya terminó pero su temporizador aún no lo notó: sin
+            # detenerlo quedaría revisando cada 250 ms para siempre.
+            self._temporizador_calculo.stop()
+        if self._canal_calculo is not None:
+            self._canal_calculo.close()
+        self._escenario_calculo = escenario
 
-        def calcular():
-            try:
-                self._resultado_calculo["datos"] = self._calcular(escenario)
-            except Exception as error:  # noqa: BLE001 - se muestra en el panel
-                self._resultado_calculo["error"] = error
-
-        self._calculo = threading.Thread(target=calcular, daemon=True)
+        # Las réplicas corren en otro proceso, no en otro hilo: un hilo de Python compite
+        # por el GIL con el dibujo de la ventana y un solo redibujado pasaba de 0,3 s a
+        # más de 4 s mientras se simulaba. "spawn" funciona igual en Windows, macOS y Linux.
+        contexto = multiprocessing.get_context("spawn")
+        self._canal_calculo, salida = contexto.Pipe(duplex=False)
+        self._calculo = contexto.Process(target=_correr_en_proceso, args=(escenario, salida),
+                                         daemon=True)
         self._calculo.start()
-        # Matplotlib no se puede tocar desde otro hilo: un temporizador de la ventana
-        # revisa cuándo terminó el cálculo y dibuja los resultados.
+        salida.close()
+        # Un temporizador de la ventana revisa cada 250 ms si ya llegó el resultado.
         self._temporizador_calculo = self.figura.canvas.new_timer(interval=250)
         self._temporizador_calculo.add_callback(self._revisar_calculo)
         self._temporizador_calculo.start()
@@ -236,17 +324,27 @@ class Panel:
 
     def _revisar_calculo(self):
         """Dibuja los resultados cuando el cálculo en segundo plano termina."""
-        if self._calculo is None or self._calculo.is_alive():
+        if self._calculo is None:
             return False
+        if not self._canal_calculo.poll() and self._calculo.is_alive():
+            return True  # sigue calculando: el temporizador debe seguir revisando
+        try:
+            resultado = self._canal_calculo.recv()
+        except EOFError:  # el proceso terminó sin enviar nada
+            self._calculo.join()
+            resultado = ("error", f"el proceso terminó sin resultado (código "
+                                  f"{self._calculo.exitcode})")
         if self._temporizador_calculo is not None:
             self._temporizador_calculo.stop()
             self._temporizador_calculo = None
+        self._calculo.join()
+        self._canal_calculo.close()
         self._calculo = None
-        resultado = self._resultado_calculo
-        if "error" in resultado:
-            self._avisar(f"Error al simular: {resultado['error']}", error=True)
+        tipo, valor = resultado
+        if tipo == "error":
+            self._avisar(f"Error al simular: {valor}", error=True)
         else:
-            self._mostrar(resultado["escenario"], *resultado["datos"])
+            self._mostrar(self._escenario_calculo, *valor)
         return True
 
     def _mostrar(self, escenario, resumen, linea, cuello):

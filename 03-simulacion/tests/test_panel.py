@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from pathlib import Path
 
@@ -12,6 +13,13 @@ from modelo.configuracion import ErrorConfiguracion, cargar_escenario  # noqa: E
 from vista.panel import Panel, escenario_desde_formulario, formulario_desde_escenario  # noqa: E402
 
 BASE = Path(__file__).resolve().parents[1] / "escenarios" / "base.json"
+
+
+@pytest.fixture(autouse=True)
+def _cerrar_figuras():
+    yield
+    import matplotlib.pyplot as plt
+    plt.close("all")
 
 
 @pytest.fixture
@@ -329,3 +337,164 @@ def test_horas_a_animar_tiene_un_maximo(base):
     assert panel.estado.get_text() == "Error: Horas a animar: debe ser como máximo 72"
     panel.cajas["horas_animacion"].set_val("72")
     assert panel.animar() is not None
+
+
+# Casillas sin lag: un redibujado completo de la ventana cuesta ~175 ms, así que las casillas
+# deben repintarse solas (blit) al escribir, hacer clic, pasar el mouse o cambiar su valor.
+
+@pytest.fixture
+def conteo(base, monkeypatch):
+    """Panel ya dibujado cuyo canvas cuenta los redibujados completos y los blit."""
+    panel = Panel(base)
+    lienzo = panel.figura.canvas
+    lienzo.draw()
+    cuenta = {"draw": 0, "idle": 0, "blit": []}
+    dibujar = lienzo.draw
+
+    def draw(*args, **kwargs):
+        cuenta["draw"] += 1
+        return dibujar(*args, **kwargs)
+
+    # En Agg draw_idle llama a draw; en una ventana real se junta en un solo redibujado.
+    monkeypatch.setattr(lienzo, "draw", draw)
+    monkeypatch.setattr(lienzo, "draw_idle",
+                        lambda *a, **k: cuenta.__setitem__("idle", cuenta["idle"] + 1))
+    monkeypatch.setattr(lienzo, "blit", lambda bbox=None: cuenta["blit"].append(bbox))
+    assert lienzo.supports_blit
+    return panel, cuenta
+
+
+def _centro(eje):
+    caja = eje.get_window_extent()
+    return (caja.x0 + caja.x1) / 2, (caja.y0 + caja.y1) / 2
+
+
+def _mouse(panel, nombre, x, y):
+    from matplotlib.backend_bases import MouseEvent
+    lienzo = panel.figura.canvas
+    lienzo.callbacks.process(nombre, MouseEvent(nombre, lienzo, x, y, button=1))
+
+
+def _clic(panel, eje):
+    x, y = _centro(eje)
+    _mouse(panel, "button_press_event", x, y)
+    _mouse(panel, "button_release_event", x, y)
+
+
+def _tecla(panel, tecla):
+    from matplotlib.backend_bases import KeyEvent
+    lienzo = panel.figura.canvas
+    lienzo.callbacks.process("key_press_event", KeyEvent("key_press_event", lienzo, tecla))
+
+
+def test_escribir_en_una_casilla_no_redibuja_toda_la_ventana(conteo):
+    panel, cuenta = conteo
+    caja = panel.cajas["tasa_llegadas_h"]
+    _clic(panel, caja.ax)
+    _tecla(panel, "backspace")
+    _tecla(panel, "4")
+    assert caja.text == "4"
+    assert cuenta["draw"] == 0
+    assert cuenta["blit"] and all(bbox is caja.ax.bbox for bbox in cuenta["blit"])
+
+
+def test_salir_de_una_casilla_la_repinta_sola(conteo):
+    panel, cuenta = conteo
+    caja, otra = panel.cajas["tasa_llegadas_h"], panel.cajas["replicas"]
+    _clic(panel, caja.ax)
+    cuenta["blit"].clear()
+    _clic(panel, otra.ax)  # el clic fuera termina de escribir en la primera
+    assert not caja.cursor.get_visible()
+    assert cuenta["draw"] == 0
+    assert caja.ax.bbox in cuenta["blit"]
+
+
+def test_un_clic_fuera_de_las_casillas_no_las_repinta_si_no_se_escribe(conteo):
+    panel, cuenta = conteo
+    _mouse(panel, "button_press_event", 5, 5)
+    assert cuenta["draw"] == 0
+    assert cuenta["blit"] == []
+
+
+def test_pasar_el_mouse_por_las_casillas_no_redibuja_nada(conteo):
+    panel, cuenta = conteo
+    for caja in panel.cajas.values():
+        x, y = _centro(caja.ax)
+        _mouse(panel, "motion_notify_event", x, y)
+        _mouse(panel, "motion_notify_event", 5, y)
+    assert cuenta["draw"] == 0
+    assert cuenta["idle"] == 0
+    assert cuenta["blit"] == []
+
+
+def test_cambiar_el_valor_de_una_casilla_la_repinta_sola(conteo):
+    panel, cuenta = conteo
+    caja = panel.cajas["replicas"]
+    caja.set_val("7")
+    assert caja.text == "7"
+    assert cuenta["draw"] == 0
+    assert cuenta["blit"] == [caja.ax.bbox]
+
+
+def test_restaurar_redibuja_la_ventana_a_lo_sumo_una_vez(conteo):
+    panel, cuenta = conteo
+    for clave in ("tasa_llegadas_h", "tiempo_min_0", "replicas", "duracion_h", "semilla"):
+        panel.cajas[clave].set_val("9")
+    cuenta["draw"] = 0
+    panel.restaurar()
+    assert panel.valores() == panel.iniciales
+    assert cuenta["draw"] <= 1
+
+
+def test_sin_blit_la_casilla_pide_un_redibujado_diferido(conteo, monkeypatch):
+    panel, cuenta = conteo
+    monkeypatch.setattr(type(panel.figura.canvas), "supports_blit", False)
+    panel.cajas["replicas"].set_val("7")
+    assert cuenta["draw"] == 0
+    assert cuenta["blit"] == []
+    assert cuenta["idle"] >= 1
+
+
+def test_simular_dos_veces_seguidas_no_deja_un_temporizador_vivo(base):
+    panel = Panel(base)
+    for clave, valor in {"replicas": "1", "duracion_h": "20", "calentamiento_h": "2",
+                         "horas_animacion": "1"}.items():
+        panel.cajas[clave].set_val(valor)
+    panel.simular(en_segundo_plano=True)
+    primero = panel._temporizador_calculo
+    detenidos = []
+    primero.stop = lambda: detenidos.append(primero)
+    panel._calculo.join(timeout=60)  # terminó, pero el temporizador todavía no lo notó
+    panel.simular(en_segundo_plano=True)
+    assert primero in detenidos
+    assert panel._temporizador_calculo is not primero
+    panel._calculo.join(timeout=60)
+    assert panel._revisar_calculo() is True
+    assert panel._temporizador_calculo is None
+
+
+def test_simular_calcula_en_otro_proceso_y_el_temporizador_sigue_revisando(base):
+    panel = Panel(base)
+    for clave, valor in {"replicas": "30", "duracion_h": "1000", "calentamiento_h": "50",
+                         "horas_animacion": "1"}.items():
+        panel.cajas[clave].set_val(valor)
+    panel.simular(en_segundo_plano=True)
+    assert panel._calculo.pid != os.getpid(), "las réplicas no compiten por el GIL de la ventana"
+    # Mientras calcula devuelve True: si devolviera False Matplotlib quitaría el callback
+    # del temporizador y los resultados nunca se dibujarían.
+    assert panel._revisar_calculo() is True
+    assert panel._calculo is not None
+    assert "Cuello de botella" not in panel.estado.get_text()
+    panel._calculo.join(timeout=120)
+    assert panel._revisar_calculo() is True
+    assert "Cuello de botella" in panel.estado.get_text()
+
+
+def test_si_el_proceso_de_simular_muere_el_panel_avisa_y_no_se_cuelga(base):
+    panel = Panel(base)
+    panel.simular(en_segundo_plano=True)
+    panel._calculo.terminate()
+    panel._calculo.join(timeout=60)
+    assert panel._revisar_calculo() is True
+    assert "Error al simular: el proceso terminó sin resultado" in panel.estado.get_text()
+    assert panel._calculo is None and panel._temporizador_calculo is None
