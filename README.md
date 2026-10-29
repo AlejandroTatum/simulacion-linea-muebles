@@ -92,7 +92,7 @@ python animacion.py --guardar salidas/graficos/base.gif
 | Modelo matemático | [`02-modelo/`](02-modelo/) | Contenido en el informe (secciones 6.4.4 y 6.4.5); la carpeta solo tiene `.gitkeep` |
 | Programación y simulación | [`03-simulacion/`](03-simulacion/) | ✅ Terminado: simulación, panel y animación; **105 pruebas pasan** |
 | Experimentos (E1, E2, E3) | [`04-experimentos/`](04-experimentos/) | ✅ Resultados, tablas y gráficas generados |
-| Informe final (formato IEEE) | [`05-informe/`](05-informe/) | En redacción: la carpeta solo tiene `.gitkeep` (aún no hay DOCX/PDF en el repositorio) |
+| Informe final (formato IEEE) | [`05-informe/documento/`](05-informe/documento/) | ✅ [`Informe_Linea_Muebles_IEEE.pdf`](05-informe/documento/Informe_Linea_Muebles_IEEE.pdf) y su DOCX editable |
 
 La coordinación del grupo se hizo fuera de GitHub; este repositorio guarda el código, los
 datos y la documentación disponible.
@@ -219,6 +219,7 @@ simulacion-linea-muebles/
 │   ├── linea-*.csv
 │   └── graficos/
 └── 05-informe/               # informe final
+    ├── documento/            # Informe_Linea_Muebles_IEEE.pdf y .docx (versión entregable)
     └── latex/                # main.tex (IEEEtran), referencias.bib e imagenes/
 ```
 
