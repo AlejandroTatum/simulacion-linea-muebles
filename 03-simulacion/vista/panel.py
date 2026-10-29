@@ -21,7 +21,7 @@ ROJO = "#b8322a"
 TEXTO = "#2b2622"
 
 # Zona del taller animado (x, y, ancho, alto en fracciones de la ventana).
-ZONA_TALLER = (0.25, 0.33, 0.745, 0.67)
+ZONA_TALLER = (0.25, 0.37, 0.745, 0.63)
 
 # Campos generales del formulario: clave del JSON, etiqueta y si es entero.
 CAMPOS_GENERALES = [
@@ -151,13 +151,14 @@ class Panel:
         # Separador vertical entre el formulario y el resto de la pantalla.
         fig.add_artist(Line2D([0.235, 0.235], [0.02, 0.98], color="#e2d9cc",
                                                lw=1, transform=fig.transFigure))
-        self.eje_barras = fig.add_axes([0.285, 0.05, 0.23, 0.18])
-        self.eje_tabla = fig.add_axes([0.55, 0.03, 0.44, 0.22])
+        self.eje_barras = fig.add_axes([0.285, 0.04, 0.23, 0.14])
+        self.eje_tabla = fig.add_axes([0.55, 0.02, 0.44, 0.16])
         self.eje_tabla.axis("off")
-        self.estado = fig.text(0.255, 0.322, "", fontsize=9.5, color=TEXTO, va="top")
+        self.estado = fig.text(0.255, 0.362, "", fontsize=9.5, color=TEXTO, va="top")
         self._bases = {}
         self._limpiar_resultados()
         fig.canvas.mpl_connect("resize_event", self._ajustar_taller)
+        fig.canvas.mpl_connect("close_event", self._al_cerrar)
         self.animar()
 
     # Lectura del formulario -------------------------------------------------
@@ -169,6 +170,9 @@ class Panel:
         return escenario_desde_formulario(self.valores(), self.base)
 
     def _avisar(self, texto, error=False):
+        import textwrap
+        # Las líneas largas se parten para que el resumen no salga de su franja.
+        texto = "\n".join(textwrap.fill(linea, 125) for linea in texto.split("\n"))
         self.estado.set_text(texto)
         self.estado.set_color(ROJO if error else TEXTO)
         self.figura.canvas.draw_idle()
@@ -191,6 +195,9 @@ class Panel:
         replicas, resumen = SimulacionLinea(escenario).correr_todas()
         linea = comparar_linea(replicas, resumen, escenario)
         cuello = cuello_de_botella(resumen)
+        # El taller se vuelve a animar con los mismos valores: toda la pantalla muestra
+        # el mismo escenario.
+        self.animar()
         self._dibujar_resultados(escenario, resumen, linea, cuello)
         return resumen, linea
 
@@ -209,7 +216,7 @@ class Panel:
             self._avisar(f"Error: {error}", error=True)
             return None
 
-        if self._animacion is not None:
+        if self._animando():
             self._animacion.event_source.stop()
         if self.escena is not None:
             self.escena.quitar()
@@ -225,9 +232,14 @@ class Panel:
         self.figura.canvas.draw_idle()
         return self._animacion
 
+    def _animando(self):
+        """Matplotlib borra el temporizador (event_source) cuando muestra el último cuadro."""
+        return self._animacion is not None and self._animacion.event_source is not None
+
     def pausar(self):
         """Detiene o reanuda la animación; devuelve True si quedó en pausa."""
-        if self._animacion is None:
+        if not self._animando():
+            self._avisar("La animación ya terminó: presioná Animar de nuevo para repetirla.")
             return None
         if self._pausado:
             self._animacion.resume()
@@ -237,6 +249,11 @@ class Panel:
         self.botones["pausa"].label.set_text("Seguir" if self._pausado else "Pausa")
         self.figura.canvas.draw_idle()
         return self._pausado
+
+    def _al_cerrar(self, _evento=None):
+        """Al cerrar la ventana se detiene la animación para que el programa termine."""
+        if self._animando():
+            self._animacion.event_source.stop()
 
     def _ajustar_taller(self, _evento=None):
         if self.escena is not None:

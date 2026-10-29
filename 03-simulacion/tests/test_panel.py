@@ -160,3 +160,75 @@ def test_los_textos_del_panel_no_se_pisan_en_una_pantalla_chica(base):
         caja = texto.get_window_extent()
         if caja.x0 < separador_x and texto.get_text().strip():
             assert caja.x1 <= separador_x, texto.get_text()
+
+
+def _terminar_animacion(panel):
+    """Matplotlib deja event_source en None cuando la animación muestra el último cuadro."""
+    panel._animacion.event_source = None
+
+
+def test_animar_de_nuevo_funciona_cuando_la_animacion_ya_termino(base):
+    panel = Panel(base)
+    panel.cajas["horas_animacion"].set_val("1")
+    panel.animar()
+    _terminar_animacion(panel)
+    assert panel.animar() is not None
+    assert panel._animacion.event_source is not None
+
+
+def test_pausa_con_la_animacion_terminada_avisa_y_no_falla(base):
+    panel = Panel(base)
+    panel.cajas["horas_animacion"].set_val("1")
+    panel.animar()
+    _terminar_animacion(panel)
+    assert panel.pausar() is None
+    assert "Animar de nuevo" in panel.estado.get_text()
+
+
+def test_restaurar_funciona_cuando_la_animacion_ya_termino(base):
+    panel = Panel(base)
+    panel.animar()
+    _terminar_animacion(panel)
+    panel.cajas["tasa_llegadas_h"].set_val("9")
+    panel.restaurar()
+    assert panel.cajas["tasa_llegadas_h"].text == "3"
+    assert panel._animacion.event_source is not None
+
+
+def test_cerrar_la_ventana_detiene_la_animacion(base):
+    panel = Panel(base)
+    panel.cajas["horas_animacion"].set_val("1")
+    animacion = panel.animar()
+    temporizador = animacion.event_source
+    detenido = []
+    temporizador.stop = lambda: detenido.append(True)
+    panel.figura.canvas.callbacks.process("close_event", None)
+    assert detenido, "al cerrar, la animación deja de pedir cuadros"
+
+
+@pytest.mark.parametrize("tamano", [(13.66, 7.68), (19.2, 10.2)])
+def test_el_resumen_largo_no_pisa_los_resultados(base, tamano):
+    panel = Panel(base)
+    for clave, valor in {"replicas": "2", "duracion_h": "100", "calentamiento_h": "10",
+                         "tasa_llegadas_h": "5"}.items():
+        panel.cajas[clave].set_val(valor)
+    panel.simular()
+    panel.figura.set_size_inches(*tamano)
+    panel._ajustar_taller()
+    panel.figura.canvas.draw()
+    estado = panel.estado.get_window_extent()
+    separacion = 6  # píxeles libres entre el resumen y lo que tiene debajo
+    for otro in (panel.eje_tabla.title, panel.eje_barras.title):
+        assert estado.y0 - otro.get_window_extent().y1 >= separacion, otro.get_text()
+    assert estado.x1 <= panel.figura.bbox.width
+
+
+def test_simular_actualiza_tambien_el_taller(base):
+    panel = Panel(base)
+    for clave, valor in {"replicas": "2", "duracion_h": "100", "calentamiento_h": "10",
+                         "horas_animacion": "1", "tiempo_min_2": "10"}.items():
+        panel.cajas[clave].set_val(valor)
+    panel.simular()
+    _, (titulo, detalle) = panel.escena.carteles[2]
+    assert titulo.get_text() == "Ensamblaje"
+    assert "10 min/mueble" in detalle.get_text() and "ρ = 50%" in detalle.get_text()
