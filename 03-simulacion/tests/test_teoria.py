@@ -53,6 +53,12 @@ def test_la_teoria_rechaza_mas_de_un_servidor():
         mm1(tasa_llegadas=3, tasa_servicio=4, servidores=2)
 
 
+@pytest.mark.parametrize("lam, mu", [(0, 4), (-1, 4), (3, 0), (3, -1)])
+def test_la_teoria_rechaza_tasas_no_positivas(lam, mu):
+    with pytest.raises(ValueError, match="positivas"):
+        mm1(lam, mu)
+
+
 def test_unstable_station_is_rejected():
     with pytest.raises(ValueError, match="inestable"):
         mm1(tasa_llegadas=4, tasa_servicio=4, servidores=1)

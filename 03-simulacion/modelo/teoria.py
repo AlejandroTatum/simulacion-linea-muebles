@@ -13,6 +13,10 @@ def mm1(tasa_llegadas, tasa_servicio, servidores=1):
             "usá servidores=1")
 
     lam, mu = tasa_llegadas, tasa_servicio
+    if lam <= 0 or mu <= 0:
+        raise ValueError(
+            f"Las tasas deben ser positivas: lambda = {lam:g}, mu = {mu:g}; "
+            "no se puede calcular una estación M/M/1")
     rho = lam / mu
     if rho >= 1:
         raise ValueError(f"Estación inestable: rho = {rho:.3f} >= 1")

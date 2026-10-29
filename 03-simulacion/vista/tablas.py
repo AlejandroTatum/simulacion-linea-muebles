@@ -29,8 +29,8 @@ def mostrar_resumen(escenario, resumen, linea, archivos):
     print(f"Escenario: {escenario['nombre']} | {escenario['replicas']} réplicas de "
           f"{escenario['duracion_h']} h ({escenario['calentamiento_h']} h de calentamiento)")
 
-    tabla = resumen[COLUMNAS].copy()
-    for columna in COLUMNAS:
+    tabla = resumen[[columna for columna in COLUMNAS if columna in resumen.columns]].copy()
+    for columna in tabla.columns:
         if columna != "estacion":
             tabla[columna] = [_numero(valor) for valor in tabla[columna]]
     print(tabla.to_string(index=False))
