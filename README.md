@@ -88,8 +88,8 @@ python animacion.py --guardar salidas/graficos/base.gif
 
 | Parte | Carpeta | Estado |
 |---|---|:---:|
-| Investigación y marco teórico | [`01-investigacion/`](01-investigacion/) | Contenido en el informe (secciones 4 y 6.4.2); la carpeta solo tiene `.gitkeep` |
-| Modelo matemático | [`02-modelo/`](02-modelo/) | Contenido en el informe (secciones 6.4.4 y 6.4.5); la carpeta solo tiene `.gitkeep` |
+| Investigación y marco teórico | [`01-investigacion/`](01-investigacion/) | Lista original de referencias (`referencias.bib`, 8 entradas); la bibliografía final del informe está en [`05-informe/latex/referencias.bib`](05-informe/latex/referencias.bib) |
+| Modelo matemático | [`02-modelo/`](02-modelo/) | [`README.md`](02-modelo/README.md) con el modelo matemático: supuestos, parámetros, ecuaciones e indicadores |
 | Programación y simulación | [`03-simulacion/`](03-simulacion/) | ✅ Terminado: simulación, panel y animación; **105 pruebas pasan** |
 | Experimentos (E1, E2, E3) | [`04-experimentos/`](04-experimentos/) | ✅ Resultados, tablas y gráficas generados |
 | Informe final (formato IEEE) | [`05-informe/documento/`](05-informe/documento/) | ✅ [`Informe_Linea_Muebles_IEEE.pdf`](05-informe/documento/Informe_Linea_Muebles_IEEE.pdf) y su DOCX editable |
@@ -105,7 +105,7 @@ Línea de fabricación de muebles con cuatro estaciones en serie, cada una con s
 sin límite y `ci` operarios que atienden un mueble a la vez. Llegadas de Poisson con
 λ = 3 muebles/h y tiempos de servicio exponenciales con media `ti`.
 
-**Parámetros de la línea base (Tabla V del informe):**
+**Parámetros de la línea base (Tabla III del informe):**
 
 | Estación | ci | ti (min/mueble) |
 |---|:---:|:---:|
@@ -117,7 +117,7 @@ sin límite y `ci` operarios que atienden un mueble a la vez. Llegadas de Poisso
 **Configuración de la corrida:** línea vacía al inicio, 30 réplicas independientes con
 semillas distintas, 1 000 h por réplica y 100 h de calentamiento descartadas.
 
-**Control:** el promedio de la simulación base se acerca a la Tabla VI del informe
+**Control:** el promedio de la simulación base se acerca a la Tabla IV del informe
 (por ejemplo, ensamblaje con ρ ≈ 75 % y Wq ≈ 45 min). Cada resumen también compara
 `Lq` con `λ efectiva · Wq`, usando el throughput observado, para verificar la Ley de Little
 (ecuación (6)).
@@ -192,8 +192,8 @@ Las gráficas de cada escenario están en `03-simulacion/salidas/graficos/` y en
 simulacion-linea-muebles/
 ├── README.md                 # este documento
 ├── pytest.ini                # testpaths y pythonpath para pytest
-├── 01-investigacion/         # reservada: revisión de literatura en el informe
-├── 02-modelo/                # reservada: parámetros y ecuaciones en el informe
+├── 01-investigacion/         # referencias.bib: lista original de referencias
+├── 02-modelo/                # README.md: supuestos, parámetros y ecuaciones del modelo
 ├── 03-simulacion/            # código Python, escenarios y resultados
 │   ├── README.md             # guía detallada de uso y solución de problemas
 │   ├── main.py               # ejecuta uno o varios escenarios
