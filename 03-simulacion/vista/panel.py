@@ -58,7 +58,6 @@ def formulario_desde_escenario(escenario):
     for clave, _, _ in CAMPOS_GENERALES:
         valores[clave] = _texto(escenario[clave])
     for i, estacion in enumerate(escenario["estaciones"]):
-        valores[f"recursos_{i}"] = _texto(estacion["recursos"])
         valores[f"tiempo_min_{i}"] = _texto(estacion["tiempo_min"])
     return valores
 
@@ -71,8 +70,8 @@ def escenario_desde_formulario(valores, base):
         escenario[clave] = _numero(valores[clave], etiqueta, entero)
     for i, estacion in enumerate(escenario["estaciones"]):
         nombre = estacion["nombre"]
-        estacion["recursos"] = _numero(valores[f"recursos_{i}"], f"Operarios de {nombre}",
-                                       entero=True)
+        # El panel es M/M/1, como el informe: un operario por estación.
+        estacion["recursos"] = 1
         estacion["tiempo_min"] = _numero(valores[f"tiempo_min_{i}"],
                                          f"Tiempo de {nombre} (min)")
     if escenario != base:
@@ -120,13 +119,12 @@ class Panel:
         caja("tasa_llegadas_h", 0.17, y)
 
         y -= 0.06
-        fig.text(0.02, y, "Estación", fontsize=9.5, weight="semibold", color=TEXTO)
-        fig.text(0.10, y, "Operarios", fontsize=9.5, weight="semibold", color=TEXTO)
+        fig.text(0.02, y, "Estación (1 operario, M/M/1)", fontsize=9.5, weight="semibold",
+                 color=TEXTO)
         fig.text(0.17, y, "t (min)", fontsize=9.5, weight="semibold", color=TEXTO)
         for i, estacion in enumerate(base["estaciones"]):
             y -= 0.05
             fig.text(0.02, y + 0.011, estacion["nombre"], fontsize=10.5, color=TEXTO)
-            caja(f"recursos_{i}", 0.10, y, ancho=0.05)
             caja(f"tiempo_min_{i}", 0.17, y)
 
         y -= 0.025
@@ -345,7 +343,7 @@ class Panel:
         filas = []
         for _, fila in resumen.iterrows():
             filas.append([
-                fila["estacion"], f"{fila['recursos']:.0f}", _texto(fila["tiempo_min"]),
+                fila["estacion"], _texto(fila["tiempo_min"]),
                 _formato(fila["utilizacion_media"] * 100, 1),
                 _formato(fila["utilizacion_teorica"] * 100, 1),
                 _formato(fila["lq_media"]), _formato(fila["lq_teorico"]),
@@ -358,13 +356,13 @@ class Panel:
                                  "botella)", loc="left", fontsize=11, color=TEXTO)
         tabla = self.eje_tabla.table(
             cellText=filas, loc="upper center", cellLoc="center",
-            colWidths=[0.14, 0.05, 0.08] + [0.104] * 7,
-            colLabels=["Estación", "c", "t (min)", "ρ sim %", "ρ teo %", "Lq sim", "Lq teo",
+            colWidths=[0.15, 0.08] + [0.093] * 7 + [0.12],
+            colLabels=["Estación", "t (min)", "ρ sim %", "ρ teo %", "Lq sim", "Lq teo",
                        "Wq sim", "Wq teo", "Error Wq %"])
         tabla.auto_set_font_size(False)
         tabla.set_fontsize(8.5)
         tabla.scale(1, 1.35)
-        for columna in range(10):
+        for columna in range(len(filas[0])):
             tabla[0, columna].set_facecolor("#e8eef5")
             fila_cuello = nombres.index(cuello) + 1
             tabla[fila_cuello, columna].set_facecolor("#f6dcd9")
@@ -378,19 +376,9 @@ class Panel:
                   f"(la limita {linea['cuello_capacidad']})"]
         sin_teoria = list(resumen.loc[resumen["utilizacion_teorica"].isna(), "estacion"])
         if sin_teoria:
-            varios = [f"{fila['estacion']} ({fila['recursos']:.0f} operarios)"
-                      for _, fila in resumen.iterrows()
-                      if fila["estacion"] in sin_teoria and fila["recursos"] > 1]
-            inestables = [fila["estacion"] for _, fila in resumen.iterrows()
-                          if fila["estacion"] in sin_teoria and fila["recursos"] == 1]
-            if varios:
-                lineas.append(f"Sin comparación teórica M/M/1: {', '.join(varios)}. "
-                              "La simulación corre igual, pero la teoría del informe "
-                              "supone un operario por estación.")
-            if inestables:
-                lineas.append(f"Atención: {', '.join(inestables)} recibe más muebles de los "
-                              "que puede atender (λ ≥ c·μ). Su cola crece sin límite y no "
-                              "hay valor teórico.")
+            lineas.append(f"Atención: {', '.join(sin_teoria)} recibe más muebles de los que "
+                          "puede atender (λ ≥ μ). Su cola crece sin límite y no hay valor "
+                          "teórico M/M/1.")
         self._avisar("\n".join(lineas), error=bool(sin_teoria))
         self._escalar_textos()
 
