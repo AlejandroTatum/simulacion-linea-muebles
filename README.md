@@ -181,7 +181,7 @@ Las gráficas de cada escenario están en `03-simulacion/graficos/` y en
 | `flujo-<escenario>.png` | Composición del tiempo total de flujo: servicio más espera por estación. |
 | `escenarios.png` | Comparación de ensamblaje y acabado en E1, E2 y E3, más capacidad de la línea frente a producción. Solo se genera al simular dos o más escenarios en la misma corrida. |
 
-![Utilización y espera por estación](03-simulacion/graficos/base.png)
+![Utilización y espera por estación](04-experimentos/graficos/base.png)
 
 ![Comparación de los tres escenarios](04-experimentos/graficos/escenarios.png)
 
