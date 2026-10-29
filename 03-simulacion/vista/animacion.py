@@ -208,16 +208,31 @@ def _usar_fuente():
 class Escena:
     """Figura, dibujo por cuadro y ajuste de textos."""
 
-    def __init__(self, figura, dibujar, tiempos, carteles, ajustar_texto):
+    def __init__(self, figura, dibujar, tiempos, carteles, ajustar_texto, artistas=()):
         self.figura = figura
         self.dibujar = dibujar
         self.tiempos = tiempos
         self.carteles = carteles
         self.ajustar_texto = ajustar_texto
+        self.artistas = list(artistas)
+
+    def carteles_texto(self):
+        """Textos de todos los carteles de las estaciones."""
+        return [texto for _, textos in self.carteles for texto in textos]
+
+    def quitar(self):
+        """Borra el taller de la figura para dibujar otro en su lugar."""
+        for artista in self.artistas:
+            artista.remove()
+        self.artistas = []
 
 
-def armar(cfg, horas, paso_min, semilla):
-    """Simula desde un taller vacío y prepara la escena."""
+def armar(cfg, horas, paso_min, semilla, figura=None, zona=(0, 0, 1, 1)):
+    """Simula desde un taller vacío y prepara la escena.
+
+    Sin `figura` abre una ventana propia. Con `figura`, dibuja el taller dentro de `zona`
+    (x, y, ancho, alto en fracciones de la figura), por ejemplo en el panel de parámetros.
+    """
     import matplotlib.pyplot as plt
     from matplotlib.patches import Patch
     from matplotlib.text import Text
@@ -238,9 +253,19 @@ def armar(cfg, horas, paso_min, semilla):
     cuello = max(range(n), key=lambda i: rhos[i])
 
     _usar_fuente()
-    fig = plt.figure(figsize=TAMANO_DISENO, facecolor=FONDO)
-    taller = fig.add_axes((0.02, 0.31, 0.96, 0.57))
-    curvas = fig.add_axes((0.06, 0.07, 0.78, 0.17), facecolor=FONDO)
+    propia = figura is None
+    fig = plt.figure(figsize=TAMANO_DISENO, facecolor=FONDO) if propia else figura
+    zx, zy, zw, zh = zona
+
+    def en_zona(x, y):
+        return zx + x * zw, zy + y * zh
+
+    def rect(x, y, w, h):
+        return (*en_zona(x, y), w * zw, h * zh)
+
+    textos_previos = list(fig.texts)
+    taller = fig.add_axes(rect(0.02, 0.31, 0.96, 0.57))
+    curvas = fig.add_axes(rect(0.06, 0.07, 0.78, 0.17), facecolor=FONDO)
 
     # Taller: pedidos a la izquierda y depósito a la derecha.
     x_deposito = ANCHO_LLEGADA + n * ANCHO_ESTACION
@@ -314,14 +339,15 @@ def armar(cfg, horas, paso_min, semilla):
                                       MADERA_LAQUEADA, escala=0.85))
 
     # Encabezado: escenario, leyenda, reloj y totales.
-    fig.text(0.03, 0.952, "Taller de muebles", fontsize=17, weight="semibold")
-    fig.text(0.03, 0.915, cfg["nombre"], fontsize=10.5, color=TEXTO_SUAVE)
-    reloj = fig.text(0.97, 0.952, "", ha="right", fontsize=17, weight="semibold")
-    totales = fig.text(0.97, 0.915, "", ha="right", fontsize=10.5, color=TEXTO_SUAVE)
+    fig.text(*en_zona(0.03, 0.952), "Taller de muebles", fontsize=17, weight="semibold")
+    fig.text(*en_zona(0.03, 0.915), cfg["nombre"], fontsize=10.5, color=TEXTO_SUAVE)
+    reloj = fig.text(*en_zona(0.97, 0.952), "", ha="right", fontsize=17, weight="semibold")
+    totales = fig.text(*en_zona(0.97, 0.915), "", ha="right", fontsize=10.5, color=TEXTO_SUAVE)
     claves = [Patch(color=TRABAJANDO, label="operario trabajando"),
               Patch(color=LIBRE, label="operario esperando material"),
               Patch(color=CUELLO, label="cuello de botella")]
-    fig.legend(handles=claves, loc="center", bbox_to_anchor=(0.5, 0.93), ncol=3, frameon=False,
+    leyenda = fig.legend(handles=claves, loc="center", bbox_to_anchor=en_zona(0.5, 0.93), ncol=3,
+               frameon=False,
                fontsize=9.5, handlelength=1.1, handleheight=1.1, columnspacing=1.8)
 
     # Abajo: muebles esperando en cada estación. La cola es entera, por eso escalones.
@@ -351,17 +377,23 @@ def armar(cfg, horas, paso_min, semilla):
     curvas.legend(loc="upper left", bbox_to_anchor=(1.02, 1.05), fontsize=9, frameon=False,
                   title="Estación", title_fontsize=9, alignment="left")
 
-    # El texto conserva su tamaño de diseño y se escala con la ventana.
-    bases = [(t, t.get_fontsize()) for t in fig.findobj(Text)]
+    # El texto conserva su tamaño de diseño y se escala con el lugar disponible.
+    textos_propios = [t for t in fig.texts if t not in textos_previos]
+    propios = taller.findobj(Text) + curvas.findobj(Text) + leyenda.findobj(Text) + textos_propios
+    bases = [(t, t.get_fontsize()) for t in propios]
+    artistas = [taller, curvas, leyenda, *textos_propios]
 
     def ajustar_texto(_evento=None):
         ancho_pulg, alto_pulg = fig.get_size_inches()
-        factor = min(ancho_pulg / TAMANO_DISENO[0], alto_pulg / TAMANO_DISENO[1])
+        factor = min(ancho_pulg * zw / TAMANO_DISENO[0], alto_pulg * zh / TAMANO_DISENO[1])
         for texto, base in bases:
             texto.set_fontsize(base * factor)
         curvas.tick_params(labelsize=8.5 * factor)
 
-    fig.canvas.mpl_connect("resize_event", ajustar_texto)
+    if propia:
+        fig.canvas.mpl_connect("resize_event", ajustar_texto)
+    else:
+        ajustar_texto()
 
     def dibujar(k):
         en_proceso = 0
@@ -389,7 +421,7 @@ def armar(cfg, horas, paso_min, semilla):
         reloj.set_text(f"hora {h:02d}:{m:02d}")
         totales.set_text(f"{en_proceso} muebles en proceso · {terminadas[k]} terminados")
 
-    return Escena(fig, dibujar, tiempos, carteles, ajustar_texto)
+    return Escena(fig, dibujar, tiempos, carteles, ajustar_texto, artistas)
 
 
 def animar(cfg, horas, paso_min, semilla, guardar=None):

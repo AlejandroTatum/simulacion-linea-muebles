@@ -66,8 +66,9 @@ en [`03-simulacion/README.md`](03-simulacion/README.md).
 
 Hay dos formas, y ninguna obliga a tocar el código Python:
 
-- **Ventana:** `python panel.py` abre casillas para cada valor y los botones Simular,
-  Animar, Guardar escenario y Restaurar.
+- **Ventana:** `python panel.py` abre una sola pantalla con las casillas de cada valor, el
+  taller animado y los resultados, y los botones Animar de nuevo, Pausa, Simular, Guardar y
+  Restaurar.
 - **Archivo:** editar o copiar `03-simulacion/escenarios/base.json`. La guía de cada campo
   está en [`03-simulacion/escenarios/README.md`](03-simulacion/escenarios/README.md).
 
@@ -90,7 +91,7 @@ python animacion.py --guardar salidas/graficos/base.gif
 |---|---|:---:|
 | Investigación y marco teórico | [`01-investigacion/`](01-investigacion/) | Lista original de referencias (`referencias.bib`, 8 entradas); la bibliografía final del informe está en [`05-informe/latex/referencias.bib`](05-informe/latex/referencias.bib) |
 | Modelo matemático | [`02-modelo/`](02-modelo/) | [`README.md`](02-modelo/README.md) con el modelo matemático: supuestos, parámetros, ecuaciones e indicadores |
-| Programación y simulación | [`03-simulacion/`](03-simulacion/) | ✅ Terminado: simulación, panel y animación; **105 pruebas pasan** |
+| Programación y simulación | [`03-simulacion/`](03-simulacion/) | ✅ Terminado: simulación, panel y animación; **112 pruebas pasan** |
 | Experimentos (E1, E2, E3) | [`04-experimentos/`](04-experimentos/) | ✅ Resultados, tablas y gráficas generados |
 | Informe final (formato IEEE) | [`05-informe/documento/`](05-informe/documento/) | ✅ [`Informe_Linea_Muebles_IEEE.pdf`](05-informe/documento/Informe_Linea_Muebles_IEEE.pdf) y su DOCX editable |
 
@@ -198,13 +199,13 @@ simulacion-linea-muebles/
 │   ├── README.md             # guía detallada de uso y solución de problemas
 │   ├── main.py               # ejecuta uno o varios escenarios
 │   ├── animacion.py          # entrada de la animación
-│   ├── panel.py              # ventana para cambiar parámetros
+│   ├── panel.py              # pantalla única: parámetros, taller y resultados
 │   ├── requirements.txt
 │   ├── modelo/               # configuración, simulación y teoría
 │   ├── vista/                # tablas, gráficos, animación y panel
 │   ├── controlador/          # une modelo y vista
 │   ├── escenarios/           # base.json, e2.json, e3.json y su README
-│   ├── tests/                # pruebas automáticas (105)
+│   ├── tests/                # pruebas automáticas (112)
 │   ├── fuentes/              # fuente Inter y su licencia
 │   ├── salidas/              # resultados de la última corrida (--salida lo cambia)
 │   │   ├── graficos/         # PNG de los escenarios y comparación
@@ -241,7 +242,7 @@ python -m pytest
 
 `pytest.ini` define `testpaths = 03-simulacion/tests` y
 `pythonpath = 03-simulacion`, por lo que las importaciones del proyecto se resuelven sin
-configuración adicional. Estado actual: **105 pruebas pasan**.
+configuración adicional. Estado actual: **112 pruebas pasan**.
 
 Las pruebas cubren teoría M/M/1, configuración y validación de escenarios, simulación,
 capacidad de la línea, los tres escenarios, Ley de Little, regresión de E1, gráficos,

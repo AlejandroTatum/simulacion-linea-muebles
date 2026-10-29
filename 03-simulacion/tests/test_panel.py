@@ -94,3 +94,69 @@ def test_restaurar_vuelve_a_los_valores_iniciales(base):
     panel.cajas["tasa_llegadas_h"].set_val("9")
     panel.restaurar()
     assert panel.cajas["tasa_llegadas_h"].text == "3"
+
+
+def test_el_taller_se_anima_en_la_misma_ventana_del_panel(base):
+    import matplotlib.pyplot as plt
+    plt.close("all")
+    panel = Panel(base)
+    panel.cajas["horas_animacion"].set_val("1")
+    assert panel.animar() is not None
+    assert plt.get_fignums() == [panel.figura.number], "no se abre otra ventana"
+    assert panel.escena.figura is panel.figura
+
+
+def test_animar_de_nuevo_reemplaza_el_taller_anterior(base):
+    panel = Panel(base)
+    panel.cajas["horas_animacion"].set_val("1")
+    panel.animar()
+    ejes_antes = len(panel.figura.axes)
+    textos_antes = len(panel.figura.texts)
+    panel.cajas["tiempo_min_2"].set_val("10")
+    panel.animar()
+    assert len(panel.figura.axes) == ejes_antes
+    assert len(panel.figura.texts) == textos_antes
+    assert any("10 min/mueble" in t.get_text() for t in panel.escena.carteles_texto())
+
+
+def test_pausa_detiene_y_reanuda_la_animacion(base):
+    panel = Panel(base)
+    panel.cajas["horas_animacion"].set_val("1")
+    panel.animar()
+    assert panel.pausar() is True
+    assert panel.botones["pausa"].label.get_text() == "Seguir"
+    assert panel.pausar() is False
+    assert panel.botones["pausa"].label.get_text() == "Pausa"
+
+
+def test_el_panel_abre_con_el_taller_dibujado(base):
+    panel = Panel(base)
+    assert panel.escena is not None
+    assert panel.escena.figura is panel.figura
+
+
+def test_sin_cambios_el_escenario_conserva_su_nombre(base):
+    assert escenario_desde_formulario(formulario_desde_escenario(base), base)["nombre"] == base["nombre"]
+    valores = formulario_desde_escenario(base)
+    valores["tasa_llegadas_h"] = "4"
+    assert escenario_desde_formulario(valores, base)["nombre"] == "Personalizado"
+
+
+def test_los_textos_del_panel_no_se_pisan_en_una_pantalla_chica(base):
+    panel = Panel(base)
+    for clave, valor in {"replicas": "2", "duracion_h": "100", "calentamiento_h": "10"}.items():
+        panel.cajas[clave].set_val(valor)
+    panel.simular()
+    panel.figura.set_size_inches(13.66, 7.68)
+    panel._ajustar_taller()
+    panel.figura.canvas.draw()
+    estado = panel.estado.get_window_extent()
+    titulo = panel.eje_barras.title.get_window_extent()
+    leyenda = panel.eje_barras.get_legend().get_window_extent()
+    assert not estado.overlaps(titulo)
+    assert not titulo.overlaps(leyenda)
+    separador_x = 0.235 * panel.figura.bbox.width
+    for texto in panel.figura.texts:
+        caja = texto.get_window_extent()
+        if caja.x0 < separador_x and texto.get_text().strip():
+            assert caja.x1 <= separador_x, texto.get_text()
