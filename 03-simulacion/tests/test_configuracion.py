@@ -1,5 +1,6 @@
 import copy
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -100,3 +101,34 @@ def test_nan_e_infinito_de_una_estacion_se_rechazan(tmp_path, valor):
     cfg["estaciones"][0]["tiempo_min"] = valor
     with pytest.raises(ErrorConfiguracion, match="tiempo_min"):
         cargar_escenario(_guardar(tmp_path, cfg))
+
+
+@pytest.mark.parametrize("archivo", ["base.json", "e2.json", "e3.json"])
+def test_los_escenarios_del_informe_quedan_dentro_de_los_limites(archivo):
+    cargar_escenario(BASE.parent / archivo)
+
+
+@pytest.mark.parametrize("cambios, mensaje", [
+    ({"replicas": 201},
+     "replicas debe ser como máximo 200 (se pidió 201)"),
+    ({"tasa_llegadas_h": 1000, "replicas": 1},
+     "tasa_llegadas_h × duracion_h da 1000000 muebles por réplica; el máximo es 200000. "
+     "Bajá λ o la duración"),
+    ({"tasa_llegadas_h": 100, "replicas": 30},
+     "tasa_llegadas_h × duracion_h × replicas da 3000000 muebles en total; el máximo es "
+     "1000000. Bajá λ, la duración o las réplicas"),
+])
+def test_un_escenario_exagerado_se_rechaza_antes_de_simular(tmp_path, cambios, mensaje):
+    cfg = _base()
+    cfg.update(cambios)
+    with pytest.raises(ErrorConfiguracion, match=re.escape(f"{tmp_path / 'escenario.json'}: "
+                                                            f"{mensaje}")):
+        cargar_escenario(_guardar(tmp_path, cfg))
+
+
+def test_los_limites_admiten_el_valor_exacto(tmp_path):
+    cfg = _base()
+    cfg.update(tasa_llegadas_h=200, duracion_h=1000, calentamiento_h=100, replicas=5)
+    assert cargar_escenario(_guardar(tmp_path, cfg))["replicas"] == 5
+    cfg.update(tasa_llegadas_h=3, replicas=200)
+    assert cargar_escenario(_guardar(tmp_path, cfg))["replicas"] == 200

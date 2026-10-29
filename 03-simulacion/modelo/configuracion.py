@@ -14,6 +14,13 @@ CAMPOS_ESCENARIO = ("nombre", "tasa_llegadas_h", "estaciones", "replicas",
                     "duracion_h", "calentamiento_h", "semilla")
 CAMPOS_ESTACION = ("nombre", "recursos", "tiempo_min")
 
+# Topes de trabajo: sin ellos un λ o una duración exagerados llenan la memoria (cada mueble
+# en cola es un proceso vivo) o dejan la simulación corriendo varios minutos. El escenario
+# base pide 3 × 1000 × 30 = 90 000 muebles; 1 000 000 tarda unos 25 s.
+MAX_REPLICAS = 200
+MAX_MUEBLES_POR_REPLICA = 200_000
+MAX_MUEBLES_TOTALES = 1_000_000
+
 
 class ErrorConfiguracion(ValueError):
     """El escenario no tiene el formato esperado."""
@@ -66,6 +73,8 @@ def validar_escenario(datos, origen="escenario"):
     if not _es_entero(datos["semilla"]) or datos["semilla"] < 0:
         raise ErrorConfiguracion(f"{origen}: semilla debe ser un entero mayor o igual que 0")
 
+    _revisar_topes(datos, origen)
+
     estaciones = datos["estaciones"]
     if not isinstance(estaciones, list) or not estaciones:
         raise ErrorConfiguracion(f"{origen}: la línea necesita al menos una estación")
@@ -89,6 +98,26 @@ def validar_escenario(datos, origen="escenario"):
             raise ErrorConfiguracion(f"{lugar}: tiempo_min debe ser un número mayor que 0")
 
     return datos
+
+
+def _revisar_topes(datos, origen):
+    """Rechaza escenarios que colgarían el programa por la cantidad de muebles."""
+    if datos["replicas"] > MAX_REPLICAS:
+        raise ErrorConfiguracion(
+            f"{origen}: replicas debe ser como máximo {MAX_REPLICAS} "
+            f"(se pidió {datos['replicas']})")
+
+    por_replica = datos["tasa_llegadas_h"] * datos["duracion_h"]
+    if por_replica > MAX_MUEBLES_POR_REPLICA:
+        raise ErrorConfiguracion(
+            f"{origen}: tasa_llegadas_h × duracion_h da {por_replica:.0f} muebles por réplica; "
+            f"el máximo es {MAX_MUEBLES_POR_REPLICA}. Bajá λ o la duración")
+
+    totales = por_replica * datos["replicas"]
+    if totales > MAX_MUEBLES_TOTALES:
+        raise ErrorConfiguracion(
+            f"{origen}: tasa_llegadas_h × duracion_h × replicas da {totales:.0f} muebles en "
+            f"total; el máximo es {MAX_MUEBLES_TOTALES}. Bajá λ, la duración o las réplicas")
 
 
 def cargar_escenario(ruta):

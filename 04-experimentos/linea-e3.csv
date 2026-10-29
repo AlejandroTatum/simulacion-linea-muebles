@@ -1,2 +1,2 @@
-muebles_terminados,muebles_desv,throughput_h,flujo_min,flujo_desv,escenario,cuello,throughput_teorico_h,error_throughput_pct,capacidad_linea_h,cuello_capacidad,holgura_h,flujo_teorico_min,error_flujo_pct,lq_total,lq_little_total,error_little_total_pct
-2689.266667,40.626926,2.988074,82.190669,2.775502,E3 - Ensamblaje en 10 min,Acabado,3,0.397531,5.0,Acabado,2.0,83.333333,1.371198,2.10909,2.106264,0.134168
+muebles_terminados,muebles_desv,throughput_h,flujo_min,flujo_desv,escenario,estable,cuello,throughput_teorico_h,error_throughput_pct,capacidad_linea_h,cuello_capacidad,holgura_h,flujo_teorico_min,error_flujo_pct,lq_total,lq_little_total,error_little_total_pct
+2689.266667,40.626926,2.988074,82.190669,2.775502,E3 - Ensamblaje en 10 min,True,Acabado,3,0.397531,5.0,Acabado,2.0,83.333333,1.371198,2.10909,2.106264,0.134168

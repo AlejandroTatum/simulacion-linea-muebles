@@ -12,6 +12,7 @@ import matplotlib
 from modelo.configuracion import ErrorConfiguracion, cargar_escenario, validar_escenario
 from modelo.simulacion import SimulacionLinea, comparar_linea, cuello_de_botella
 from modelo.teoria import flujo_teorico_min
+from vista.tablas import texto_inestable
 
 RAIZ = Path(__file__).resolve().parents[1]
 GUARDADO = RAIZ / "escenarios" / "personalizado.json"
@@ -23,6 +24,10 @@ TEXTO = "#2b2622"
 
 # Zona del taller animado (x, y, ancho, alto en fracciones de la ventana).
 ZONA_TALLER = (0.25, 0.37, 0.745, 0.63)
+
+# La animación arma un cuadro cada 5 min simulados; más de 3 días no se puede seguir a ojo
+# y solo hace que la ventana tarde en responder.
+MAX_HORAS_ANIMACION = 72
 
 # Campos generales del formulario: clave del JSON, etiqueta y si es entero.
 CAMPOS_GENERALES = [
@@ -227,7 +232,7 @@ class Panel:
     def _calcular(escenario):
         replicas, resumen = SimulacionLinea(escenario).correr_todas()
         linea = comparar_linea(replicas, resumen, escenario)
-        return resumen, linea, cuello_de_botella(resumen)
+        return resumen, linea, cuello_de_botella(resumen, escenario)
 
     def _revisar_calculo(self):
         """Dibuja los resultados cuando el cálculo en segundo plano termina."""
@@ -262,6 +267,9 @@ class Panel:
             horas = _numero(self.cajas["horas_animacion"].text, "Horas a animar")
             if horas <= 0:
                 raise ErrorConfiguracion("Horas a animar: debe ser mayor que 0")
+            if horas > MAX_HORAS_ANIMACION:
+                raise ErrorConfiguracion(
+                    f"Horas a animar: debe ser como máximo {MAX_HORAS_ANIMACION}")
         except ErrorConfiguracion as error:
             self._avisar(f"Error: {error}", error=True)
             return None
@@ -454,18 +462,16 @@ class Panel:
             tabla[fila_cuello, columna].set_facecolor("#f6dcd9")
 
         flujo_teorico = flujo_teorico_min(escenario["tasa_llegadas_h"], escenario["estaciones"])
-        flujo = (f"{linea['flujo_min']:.1f} min (teoría {flujo_teorico:.1f} min)"
-                 if flujo_teorico is not None else f"{linea['flujo_min']:.1f} min")
+        flujo = (f"{_formato(linea['flujo_min'], 1)} min (teoría {flujo_teorico:.1f} min)"
+                 if flujo_teorico is not None else f"{_formato(linea['flujo_min'], 1)} min")
         lineas = [f"Cuello de botella: {cuello}   ·   Producción: "
                   f"{linea['throughput_h']:.3f} muebles/h   ·   Tiempo total de flujo: {flujo}",
                   f"Capacidad máxima de la línea: {linea['capacidad_linea_h']:.2f} muebles/h "
                   f"(la limita {linea['cuello_capacidad']})"]
-        sin_teoria = list(resumen.loc[resumen["utilizacion_teorica"].isna(), "estacion"])
-        if sin_teoria:
-            lineas.append(f"Atención: {', '.join(sin_teoria)} recibe más muebles de los que "
-                          "puede atender (λ ≥ μ). Su cola crece sin límite y no hay valor "
-                          "teórico M/M/1.")
-        self._avisar("\n".join(lineas), error=bool(sin_teoria))
+        aviso = texto_inestable(linea)
+        if aviso:
+            lineas.append(aviso)
+        self._avisar("\n".join(lineas), error=bool(aviso))
         self._escalar_textos()
 
 
