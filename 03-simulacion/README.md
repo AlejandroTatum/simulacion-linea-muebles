@@ -6,7 +6,7 @@
 | Ciclo | 5.º ciclo - FEIRNNR, Carrera de Computación |
 | Práctica | Trabajo grupal de simulación |
 | Docente | José O. Guamán Q. |
-| Integrantes | Integrante 1, Integrante 2, Integrante 3, Integrante 4, Integrante 5 |
+| Integrantes | Victor Roa, Francis Valdiviezo, Cael Soto, Jimmy Ontaneda, Alejandro Padilla |
 
 ## 1. Descripción del proyecto
 
@@ -165,7 +165,7 @@ Esto ejecuta `escenarios/base.json` y escribe:
 | Archivo | Contenido |
 | --- | --- |
 | `resultados-base.csv` | Una fila por réplica y estación. |
-| `resumen-base.csv` | Promedios, desviación, teoría M/M/1 y error porcentual. |
+| `resumen-base.csv` | Promedios, desviación, teoría M/M/1, error porcentual y Ley de Little. |
 | `linea-base.csv` | Producción, flujo total y Ley de Little de la línea. |
 | `graficos/base.png` | Utilización y espera: simulación frente a teoría. |
 | `graficos/cola-base.png` | Evolución de la cola en el tiempo (réplica 1). |
@@ -302,7 +302,34 @@ python animacion.py --horas 2 --paso 10 --guardar graficos/prueba.gif
 En Linux, para abrir la ventana hace falta Tk (`sudo apt install python3-tk`). En WSL,
 SSH o servidores sin pantalla, usá siempre `--guardar`.
 
-### 4.6 Solución de problemas
+### 4.6 Cambiar los valores desde una ventana (panel)
+
+```bash
+python panel.py
+python panel.py --config escenarios/e2.json   # arranca con los valores de E2
+```
+
+Se abre una ventana con casillas para `λ`, los operarios `c` y el tiempo `t` de cada
+estación, las réplicas, la duración, el calentamiento y la semilla. Se acepta coma o punto
+decimal (`4,5` o `4.5`).
+
+| Botón | Qué hace |
+| --- | --- |
+| **Simular** | Corre las réplicas con los valores escritos y muestra la utilización simulada frente a la teórica, una tabla con `ρ`, `Lq`, `Wq` y el error, el cuello de botella (en rojo), la producción y el tiempo de flujo. |
+| **Animar** | Abre la animación del taller con esos mismos valores (las horas salen de "Horas a animar"). |
+| **Guardar escenario** | Escribe `escenarios/personalizado.json` para repetir el caso con `python main.py --config escenarios/personalizado.json`. |
+| **Restaurar** | Vuelve a los valores con los que se abrió el panel. |
+
+Si un valor no sirve (texto, negativo, cero operarios, calentamiento mayor que la duración),
+el panel muestra el error en rojo y no simula. Si una estación recibe más sillas de las que
+puede atender (`λ ≥ c·μ`), la simulación corre igual, pero el panel avisa que esa cola crece
+sin límite y no muestra valor teórico. Si se pone `c > 1`, la simulación y la animación
+funcionan, pero la comparación teórica sale `—` porque la teoría del informe es M/M/1.
+
+Con 30 réplicas de 1 000 h, cada simulación tarda unos 15 s. Para probar rápido, bajá las
+réplicas o la duración.
+
+### 4.7 Solución de problemas
 
 | Problema | Causa probable | Solución |
 | --- | --- | --- |
@@ -316,7 +343,37 @@ SSH o servidores sin pantalla, usá siempre `--guardar`.
 
 Si el error persiste, copiá el mensaje completo y el comando que ejecutaste.
 
-## 5. Configuración
+## 5. Configuración: dónde cambiar los valores
+
+**Ningún valor de la línea está escrito dentro del código Python.** Todos salen de un
+escenario JSON. Hay dos formas de cambiarlos:
+
+| Forma | Dónde | Cuándo usarla |
+| --- | --- | --- |
+| Panel de parámetros | `python panel.py` (sección 4.6) | Para cambiar valores en vivo frente al docente. |
+| Archivo de escenario | `escenarios/base.json` (o una copia) | Para dejar un escenario guardado y repetirlo con `main.py`. |
+
+En el archivo, cada valor de la línea base está en este lugar:
+
+```json
+{
+  "nombre": "E1 - Base",
+  "tasa_llegadas_h": 3,            ← λ: sillas que llegan por hora
+  "estaciones": [
+    {"nombre": "Corte",      "recursos": 1, "tiempo_min": 8},   ← c1 y t1
+    {"nombre": "Lijado",     "recursos": 1, "tiempo_min": 10},  ← c2 y t2
+    {"nombre": "Ensamblaje", "recursos": 1, "tiempo_min": 15},  ← c3 y t3
+    {"nombre": "Acabado",    "recursos": 1, "tiempo_min": 12}   ← c4 y t4
+  ],
+  "replicas": 30,                  ← réplicas independientes
+  "duracion_h": 1000,              ← horas por réplica
+  "calentamiento_h": 100,          ← horas iniciales que no se miden
+  "semilla": 2026                  ← misma semilla, mismos resultados
+}
+```
+
+Las flechas son solo explicación: JSON no admite comentarios, así que el archivo real no las
+lleva. [`escenarios/README.md`](escenarios/README.md) repite esta guía junto a los archivos.
 
 Los escenarios están en `escenarios/`. No hay parámetros de la línea escritos dentro del
 código: todo lo que cambia entre corridas está en el JSON.
@@ -382,6 +439,7 @@ para que coincida.
 03-simulacion/
 ├── main.py                  # entrada: simula uno o varios escenarios
 ├── animacion.py             # entrada de la animación
+├── panel.py                 # entrada: ventana para cambiar valores y simular
 ├── requirements.txt
 ├── modelo/
 │   ├── configuracion.py     # lee y valida los JSON
@@ -390,7 +448,8 @@ para que coincida.
 ├── vista/
 │   ├── tablas.py            # salida de la terminal
 │   ├── graficas.py          # gráficos PNG
-│   └── animacion.py         # dibujo del taller
+│   ├── animacion.py         # dibujo del taller
+│   └── panel.py             # ventana de parámetros
 ├── controlador/
 │   └── controlador.py       # une modelo y vista
 ├── escenarios/
@@ -403,8 +462,11 @@ para que coincida.
 ├── resultados-base.csv
 ├── resumen-base.csv
 ├── linea-base.csv
-└── resultados-base.md
+└── resultados-base.md       # texto de la sección 7.1 (ya integrado en el informe)
 ```
+
+Los resultados de los tres escenarios (E1, E2 y E3) están en
+[`../04-experimentos/`](../04-experimentos/README.md).
 
 - **modelo:** calcula. No imprime ni dibuja.
 - **vista:** muestra tablas, gráficos y animación. No simula.
@@ -414,14 +476,16 @@ para que coincida.
 
 **Funcionalidades:**
 
-- Simulación de la línea con estaciones, colas FIFO y un operario por estación.
-- Comparación automática con la teoría M/M/1.
+- Simulación de la línea con estaciones, colas FIFO y un operario por estación en todos los
+  escenarios (el motor admite varios operarios, pero la teoría del informe es M/M/1).
+- Comparación automática con la teoría M/M/1 y verificación de la Ley de Little.
 - Detección del cuello de botella por utilización.
 - Verificación de la Ley de Little y del tiempo total de flujo por escenario.
 - Indicadores de cola: utilización, percentil 90 y máximo.
 - Resultados en CSV y gráficos PNG.
 - Gráficos de evolución, distribución, variabilidad, flujo y comparación de escenarios.
 - Validación de escenarios antes de ejecutar.
+- Panel para cambiar los parámetros, simular y animar sin editar archivos.
 - Animación del taller para una réplica.
 
 **Resultados de la línea base:**
