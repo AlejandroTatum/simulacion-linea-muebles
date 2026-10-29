@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 import simpy
 
-from modelo.teoria import flujo_teorico_min, mm1
+from modelo.teoria import (capacidad_linea, cuello_por_capacidad, flujo_teorico_min,
+                           mm1)
 
 
 class Estacion:
@@ -239,10 +240,11 @@ def cuello_de_botella(resumen):
 
 
 def comparar_linea(replicas, resumen, escenario):
-    """Producción, flujo y Ley de Little de la línea frente a la teoría M/M/1."""
+    """Producción, capacidad, flujo y Ley de Little de la línea frente a M/M/1."""
     linea = resumir_linea(replicas)
     lam = escenario["tasa_llegadas_h"]
     flujo_teorico = flujo_teorico_min(lam, escenario["estaciones"])
+    capacidad = capacidad_linea(escenario["estaciones"])
     lq_total = float(resumen["lq_media"].sum())
     little_total = linea["throughput_h"] * float(resumen["wq_min_media"].sum()) / 60
     linea.update({
@@ -250,6 +252,9 @@ def comparar_linea(replicas, resumen, escenario):
         "cuello": cuello_de_botella(resumen),
         "throughput_teorico_h": lam,
         "error_throughput_pct": _error_pct(linea["throughput_h"], lam),
+        "capacidad_linea_h": capacidad,
+        "cuello_capacidad": cuello_por_capacidad(escenario["estaciones"]),
+        "holgura_h": capacidad - lam,
         "flujo_teorico_min": flujo_teorico,
         "error_flujo_pct": _error_pct(linea["flujo_min"], flujo_teorico),
         "lq_total": lq_total,

@@ -45,3 +45,18 @@ def flujo_teorico_min(tasa_llegadas, estaciones):
         except ValueError:
             return None
     return total
+
+
+def capacidad_estacion(estacion):
+    """Sillas por hora que puede atender una estación: c * mu."""
+    return estacion["recursos"] * 60 / estacion["tiempo_min"]
+
+
+def capacidad_linea(estaciones):
+    """Producción máxima sostenible de la línea: la estación más lenta."""
+    return min(capacidad_estacion(estacion) for estacion in estaciones)
+
+
+def cuello_por_capacidad(estaciones):
+    """Estación que limita la producción: la de menor capacidad."""
+    return min(estaciones, key=capacidad_estacion)["nombre"]

@@ -1,6 +1,7 @@
 import pytest
 
-from modelo.teoria import flujo_teorico_min, mm1
+from modelo.teoria import (capacidad_estacion, capacidad_linea, cuello_por_capacidad,
+                           flujo_teorico_min, mm1)
 
 # (tiempo medio en minutos, rho, Lq, Wq en minutos) de la Tabla VI del informe.
 TABLA_E1 = [
@@ -76,3 +77,33 @@ def test_line_flow_time_is_none_when_a_station_is_unstable():
 
 def test_line_flow_time_is_none_without_mm1_theory():
     assert flujo_teorico_min(3, [{"recursos": 2, "tiempo_min": 15}]) is None
+
+
+def test_capacidad_de_una_estacion_es_c_por_mu():
+    assert capacidad_estacion({"recursos": 1, "tiempo_min": 8}) == pytest.approx(7.5)
+    assert capacidad_estacion({"recursos": 2, "tiempo_min": 15}) == pytest.approx(8.0)
+
+
+def test_capacidad_de_la_linea_la_marca_la_estacion_mas_lenta():
+    estaciones = [
+        {"nombre": "Corte", "recursos": 1, "tiempo_min": 8},
+        {"nombre": "Lijado", "recursos": 1, "tiempo_min": 10},
+        {"nombre": "Ensamblaje", "recursos": 1, "tiempo_min": 15},
+        {"nombre": "Acabado", "recursos": 1, "tiempo_min": 12},
+    ]
+    assert capacidad_linea(estaciones) == pytest.approx(4.0)
+    assert cuello_por_capacidad(estaciones) == "Ensamblaje"
+
+
+def test_la_capacidad_sube_al_reducir_el_tiempo_de_ensamblaje():
+    def capacidad(t3):
+        return capacidad_linea([
+            {"recursos": 1, "tiempo_min": 8},
+            {"recursos": 1, "tiempo_min": 10},
+            {"recursos": 1, "tiempo_min": t3},
+            {"recursos": 1, "tiempo_min": 12},
+        ])
+
+    assert capacidad(15) == pytest.approx(4.0)
+    assert capacidad(12) == pytest.approx(5.0)
+    assert capacidad(10) == pytest.approx(5.0)

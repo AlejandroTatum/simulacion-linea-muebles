@@ -129,6 +129,17 @@ def test_resumen_y_linea_verifican_la_ley_de_little(config):
     assert linea["lq_little_total"] == pytest.approx(linea["lq_total"], rel=0.05)
 
 
+def test_la_linea_informa_capacidad_y_holgura_frente_a_la_demanda(config):
+    replicas, resumen = SimulacionLinea(config).correr_todas()
+    linea = comparar_linea(replicas, resumen, config)
+
+    assert linea["capacidad_linea_h"] == pytest.approx(4.0)
+    assert linea["cuello_capacidad"] == "Ensamblaje"
+    assert linea["holgura_h"] == pytest.approx(1.0)
+    # A λ fijo, la estación más utilizada es la de menor capacidad.
+    assert linea["cuello"] == linea["cuello_capacidad"]
+
+
 def test_falta_un_campo_y_se_rechaza(tmp_path):
     cfg = json.loads(BASE.read_text())
     del cfg["tasa_llegadas_h"]

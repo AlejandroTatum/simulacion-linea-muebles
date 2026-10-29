@@ -9,7 +9,7 @@ from pathlib import Path
 import matplotlib
 
 from modelo.configuracion import ErrorConfiguracion, cargar_escenario, validar_escenario
-from modelo.simulacion import SimulacionLinea, cuello_de_botella, resumir_linea
+from modelo.simulacion import SimulacionLinea, comparar_linea, cuello_de_botella
 from modelo.teoria import flujo_teorico_min
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -175,7 +175,7 @@ class Panel:
         self.figura.canvas.flush_events()
 
         replicas, resumen = SimulacionLinea(escenario).correr_todas()
-        linea = resumir_linea(replicas)
+        linea = comparar_linea(replicas, resumen, escenario)
         cuello = cuello_de_botella(resumen)
         self._dibujar_resultados(escenario, resumen, linea, cuello)
         return resumen, linea
@@ -301,7 +301,9 @@ class Panel:
         flujo = (f"{linea['flujo_min']:.1f} min (teoría {flujo_teorico:.1f} min)"
                  if flujo_teorico is not None else f"{linea['flujo_min']:.1f} min")
         lineas = [f"Cuello de botella: {cuello}   ·   Producción: "
-                  f"{linea['throughput_h']:.3f} sillas/h   ·   Tiempo total de flujo: {flujo}"]
+                  f"{linea['throughput_h']:.3f} sillas/h   ·   Tiempo total de flujo: {flujo}",
+                  f"Capacidad máxima de la línea: {linea['capacidad_linea_h']:.2f} sillas/h "
+                  f"(la limita {linea['cuello_capacidad']})"]
         sin_teoria = list(resumen.loc[resumen["utilizacion_teorica"].isna(), "estacion"])
         if sin_teoria:
             varios = [f"{fila['estacion']} ({fila['recursos']:.0f} operarios)"

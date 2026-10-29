@@ -40,6 +40,13 @@ def mostrar_resumen(escenario, resumen, linea, archivos):
     print(f"Throughput: {_numero(linea['throughput_h'])} sillas/h "
           f"(teoría {_numero(linea['throughput_teorico_h'])}, "
           f"error {_numero(linea['error_throughput_pct'])} %)")
+    holgura = linea["holgura_h"]
+    if holgura >= 0:
+        holgura_texto = f"holgura frente a λ: {_numero(holgura)} sillas/h"
+    else:
+        holgura_texto = f"déficit frente a λ: {_numero(abs(holgura))} sillas/h"
+    print(f"Capacidad de la línea: {_numero(linea['capacidad_linea_h'])} sillas/h "
+          f"(la limita {linea['cuello_capacidad']}; {holgura_texto})")
     print(f"Tiempo total de flujo: {_numero(linea['flujo_min'], 1)} min "
           f"({_flujo_teorico_texto(linea['flujo_teorico_min'])}, "
           f"error {_numero(linea['error_flujo_pct'])} %)")
