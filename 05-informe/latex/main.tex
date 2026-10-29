@@ -37,7 +37,7 @@ Loja, Ecuador}
 
 \begin{abstract}
 Se presenta un modelo de simulación de eventos discretos para una línea de fabricación
-de sillas compuesta por las estaciones de corte, lijado, ensamblaje y acabado. El modelo
+de muebles compuesta por las estaciones de corte, lijado, ensamblaje y acabado. El modelo
 considera llegadas de Poisson, tiempos de servicio exponenciales, colas FIFO y un
 operario por estación. Se ejecutaron 30 réplicas independientes de 1\,000 horas, con
 100 horas de calentamiento, para estimar la utilización, la longitud de cola, el tiempo
@@ -60,7 +60,7 @@ línea de producción, las colas y los tiempos de espera dependen de la capacida
 estación y de la variabilidad de las llegadas y de los tiempos de servicio
 \cite{hopp2011}.
 
-Este trabajo modela una línea de fabricación de sillas con cuatro estaciones en serie:
+Este trabajo modela una línea de fabricación de muebles con cuatro estaciones en serie:
 corte, lijado, ensamblaje y acabado. El objetivo es estimar sus indicadores de
 desempeño, identificar la estación que limita la producción y comparar los resultados
 con la teoría de colas M/M/1.
@@ -102,7 +102,7 @@ La diferencia entre la simulación y la teoría se reporta como:
 % ============================================================
 Se construyó un modelo de simulación de eventos discretos en Python 3.12 con SimPy
 \cite{simpy2024,python2024}. La línea se representa como una secuencia de estaciones;
-cada silla ocupa un recurso, espera en una cola FIFO y avanza a la siguiente estación.
+cada mueble ocupa un recurso, espera en una cola FIFO y avanza a la siguiente estación.
 Los parámetros se leen desde archivos JSON y los resultados se guardan en CSV y PNG.
 
 Se ejecutaron 30 réplicas independientes de 1\,000 horas por escenario. Las primeras
@@ -115,7 +115,7 @@ una semilla base, lo que permite reproducir los resultados.
 % ============================================================
 \section{Modelo de la línea}
 % ============================================================
-La línea base utiliza \(\lambda = 3\) sillas/h y un operario por estación. La
+La línea base utiliza \(\lambda = 3\) muebles/h y un operario por estación. La
 Tabla~\ref{tab:parametros} resume los tiempos medios de servicio.
 
 \begin{table}[!t]
@@ -148,7 +148,7 @@ Todos los escenarios conservan un operario por estación.
 \section{Resultados}
 % ============================================================
 La Tabla~\ref{tab:resultados} compara los indicadores simulados de ensamblaje y de la
-línea con los valores teóricos. La producción se mantiene cerca de 3 sillas/h en los
+línea con los valores teóricos. La producción se mantiene cerca de 3 muebles/h en los
 tres escenarios.
 
 \begin{table}[!t]
@@ -163,7 +163,7 @@ Indicador & E1 & E2 & E3 \\
 \(L_q\) simulado / teórico & 2,27 / 2,25 & 0,86 / 0,90 & 0,48 / 0,50 \\
 \(W_q\) simulado / teórico (min) & 45,4 / 45,0 & 17,3 / 18,0 & 9,7 / 10,0 \\
 Flujo simulado / teórico (min) & 124,0 / 123,3 & 92,2 / 93,3 & 82,2 / 83,3 \\
-Producción (sillas/h) & 2,998 & 2,999 & 2,988 \\
+Producción (muebles/h) & 2,998 & 2,999 & 2,988 \\
 Cuello de botella & Ensamblaje & Ensamblaje & Acabado \\
 \bottomrule
 \end{tabular}

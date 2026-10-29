@@ -10,8 +10,8 @@
 
 ## 1. Descripción del proyecto
 
-El programa simula una línea de fabricación de sillas con cuatro estaciones en serie:
-**corte → lijado → ensamblaje → acabado**. Las sillas llegan al azar, esperan en una cola
+El programa simula una línea de fabricación de muebles con cuatro estaciones en serie:
+**corte → lijado → ensamblaje → acabado**. Los muebles llegan al azar, esperan en una cola
 FIFO y son atendidas por un operario en cada estación.
 
 **Propósito:** comparar los indicadores de la simulación con los valores teóricos del
@@ -19,7 +19,7 @@ modelo M/M/1 y encontrar la estación que limita la producción.
 
 **Supuestos del modelo:**
 
-- Llegadas de Poisson con tasa `λ` sillas por hora.
+- Llegadas de Poisson con tasa `λ` muebles por hora.
 - Tiempos de servicio exponenciales con media `ti` minutos.
 - Cola FIFO sin límite en cada estación.
 - Un operario por estación (`c = 1`) en todos los escenarios.
@@ -34,24 +34,24 @@ igual y la comparación teórica muestra `—` (ver sección 8).
 
 **Parámetros de la línea base:**
 
-| Estación | Operarios `ci` | Tiempo medio `ti` (min/silla) |
+| Estación | Operarios `ci` | Tiempo medio `ti` (min/mueble) |
 | --- | :---: | :---: |
 | Corte | 1 | 8 |
 | Lijado | 1 | 10 |
 | Ensamblaje | 1 | 15 |
 | Acabado | 1 | 12 |
 
-Tasa de llegadas: `λ = 3` sillas/h. Cada réplica simula 1 000 h y descarta las primeras
+Tasa de llegadas: `λ = 3` muebles/h. Cada réplica simula 1 000 h y descarta las primeras
 100 h de calentamiento.
 
 | Medida | Significado | Fórmula M/M/1 |
 | --- | --- | --- |
 | `ρ` | Ocupación de la estación | `λ / μ` |
-| `Lq` | Sillas esperando en cola | `ρ² / (1 − ρ)` |
+| `Lq` | Muebles esperando en cola | `ρ² / (1 − ρ)` |
 | `Wq` | Espera media en cola | `Lq / λ` |
 | `W` | Tiempo en la estación | `Wq + 1/μ` |
-| `L` | Sillas en el sistema (cola + servicio) | `λ · W` |
-| `P(N > 1)` | Probabilidad de que haya al menos una silla esperando | `ρ²` |
+| `L` | Muebles en el sistema (cola + servicio) | `λ · W` |
+| `P(N > 1)` | Probabilidad de que haya al menos un mueble esperando | `ρ²` |
 
 ## 2. Tecnologías utilizadas
 
@@ -185,7 +185,7 @@ Los nombres de salida salen del archivo JSON: `base.json` produce
 
 - La ventana medida es `duracion_h − calentamiento_h`: 900 h en los tres escenarios.
 - `ρ`, `Lq`, la utilización de la cola y el percentil 90 se ponderan por tiempo.
-- `Wq` promedia solo las sillas que entraron a la estación después del calentamiento.
+- `Wq` promedia solo los muebles que entraron a la estación después del calentamiento.
 - Cada réplica usa una semilla distinta derivada de `semilla`; con la misma semilla los
   resultados se repiten.
 - Los CSV guardan promedio y desviación estándar de las 30 réplicas.
@@ -197,7 +197,7 @@ teoría (`utilizacion_teorica`, `lq_teorico`, `wq_min_teorico`,
 `cola_utilizacion_teorica`), errores (`error_utilizacion_pct`, `error_lq_pct`,
 `error_wq_pct`) y Ley de Little (`lq_little`, `error_little_pct`).
 
-**Columnas de `linea-*.csv`:** `sillas_terminadas`, `sillas_desv`, `throughput_h`,
+**Columnas de `linea-*.csv`:** `muebles_terminados`, `muebles_desv`, `throughput_h`,
 `flujo_min`, `flujo_desv`, `escenario`, `cuello`, `throughput_teorico_h`,
 `error_throughput_pct`, `capacidad_linea_h`, `cuello_capacidad`, `holgura_h`,
 `flujo_teorico_min`, `error_flujo_pct`, `lq_total`, `lq_little_total`,
@@ -208,19 +208,19 @@ teoría (`utilizacion_teorica`, `lq_teorico`, `wq_min_teorico`,
 - **`base.png`**: utilización de cada estación y espera media `Wq`, con la teoría M/M/1 al lado.
 - **`cola-base.png`**: cómo cambia la longitud de la cola durante una réplica. La franja gris es el
   calentamiento y las líneas punteadas marcan `Lq` simulado y teórico.
-- **`utilizacion-cola-base.png`**: porcentaje del tiempo con al menos una silla esperando
+- **`utilizacion-cola-base.png`**: porcentaje del tiempo con al menos un mueble esperando
   (utilización de la cola) y longitud media `Lq`.
-- **`distribucion-cola-base.png`**: porcentaje del tiempo que la cola pasa con 0, 1, 2, … sillas.
-- **`flujo-base.png`**: cuánto del tiempo total de una silla es servicio y cuánto es espera.
+- **`distribucion-cola-base.png`**: porcentaje del tiempo que la cola pasa con 0, 1, 2, … muebles.
+- **`flujo-base.png`**: cuánto del tiempo total de un mueble es servicio y cuánto es espera.
 - **`escenarios.png`**: utilización, `Lq` y `Wq` de ensamblaje y acabado en E1, E2 y E3,
   con el valor teórico marcado con un rombo, más un cuarto panel con la capacidad máxima
-  de la línea frente a la producción simulada (sillas/h).
+  de la línea frente a la producción simulada (muebles/h).
 
 **Indicadores de cola:**
 
 | Métrica | Significado |
 | --- | --- |
-| `cola_utilizacion` | Fracción del tiempo con al menos una silla esperando (`N > 1`). |
+| `cola_utilizacion` | Fracción del tiempo con al menos un mueble esperando (`N > 1`). |
 | `cola_p90` | Percentil 90 de la longitud de la cola, ponderado por tiempo. |
 | `cola_max` | Longitud máxima observada durante la ventana medida. |
 | `cola_utilizacion_teorica` | `P(N > 1) = ρ²` del modelo M/M/1. |
@@ -245,7 +245,7 @@ python main.py --config escenarios/e2.json --salida ../04-experimentos
 | `escenarios/e2.json` | E2 | Ensamblaje en 12 min |
 | `escenarios/e3.json` | E3 | Ensamblaje en 10 min |
 
-Los tres usan un solo operario por estación (`c = 1`), `λ = 3` sillas/h y los mismos
+Los tres usan un solo operario por estación (`c = 1`), `λ = 3` muebles/h y los mismos
 corte, lijado y acabado de E1. Los resultados llevan el nombre del archivo:
 `salidas/resumen-e2.csv`, `salidas/linea-e2.csv`, `salidas/graficos/e2.png`, etc.
 
@@ -261,7 +261,7 @@ python main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.js
 Se escribe en `salidas/graficos/escenarios.png` **solo cuando hay dos o más escenarios en esa
 corrida**; si se ejecutan por separado, cada uno genera sus PNG pero no la comparación.
 El gráfico tiene cuatro paneles: ρ, `Lq`, `Wq` y **capacidad frente a producción**
-(sillas/h). Los tres primeros comparan **ensamblaje y acabado**, con barras para la
+(muebles/h). Los tres primeros comparan **ensamblaje y acabado**, con barras para la
 simulación y un rombo negro para la teoría M/M/1. El cuarto muestra la capacidad máxima
 de la línea (la estación más lenta) y lo que realmente produjo cada escenario.
 
@@ -326,7 +326,7 @@ decimal (`4,5` o `4.5`).
 | **Restaurar** | Vuelve a los valores con los que se abrió el panel. |
 
 Si un valor no sirve (texto, negativo, cero operarios, calentamiento mayor que la duración),
-el panel muestra el error en rojo y no simula. Si una estación recibe más sillas de las que
+el panel muestra el error en rojo y no simula. Si una estación recibe más muebles de los que
 puede atender (`λ ≥ c·μ`), la simulación corre igual, pero el panel avisa que esa cola crece
 sin límite y no muestra valor teórico. Si se pone `c > 1`, la simulación y la animación
 funcionan, pero la comparación teórica sale `—` porque la teoría del informe es M/M/1.
@@ -363,7 +363,7 @@ En el archivo, cada valor de la línea base está en este lugar:
 ```json
 {
   "nombre": "E1 - Base",
-  "tasa_llegadas_h": 3,            ← λ: sillas que llegan por hora
+  "tasa_llegadas_h": 3,            ← λ: muebles que llegan por hora
   "estaciones": [
     {"nombre": "Corte",      "recursos": 1, "tiempo_min": 8},   ← c1 y t1
     {"nombre": "Lijado",     "recursos": 1, "tiempo_min": 10},  ← c2 y t2
@@ -388,12 +388,12 @@ código: todo lo que cambia entre corridas está en el JSON.
 | Campo JSON | Símbolo | Significado | Unidad | Valor en E1 |
 | --- | :---: | --- | :---: | :---: |
 | `nombre` | — | Nombre que aparece en la terminal y en los resultados. | — | `E1 - Base` |
-| `tasa_llegadas_h` | `λ` | Tasa de llegadas de Poisson. | sillas/h | 3 |
+| `tasa_llegadas_h` | `λ` | Tasa de llegadas de Poisson. | muebles/h | 3 |
 | `replicas` | `r` | Réplicas independientes por escenario. | — | 30 |
 | `duracion_h` | `T` | Duración de cada réplica, incluido el calentamiento. | h | 1 000 |
 | `calentamiento_h` | `Tc` | Horas iniciales que se descartan. | h | 100 |
 | `semilla` | `s0` | Semilla base; cada réplica deriva la suya. | — | 2026 |
-| `estaciones` | — | Lista ordenada del recorrido de la silla. | — | 4 |
+| `estaciones` | — | Lista ordenada del recorrido del mueble. | — | 4 |
 
 **Parámetros de cada estación:**
 
@@ -401,22 +401,22 @@ código: todo lo que cambia entre corridas está en el JSON.
 | --- | :---: | --- | :---: | :---: |
 | `nombre` | — | Nombre de la estación. | — | Corte, Lijado, Ensamblaje, Acabado |
 | `recursos` | `c` | Operarios en paralelo. | personas | 1 en todas |
-| `tiempo_min` | `ti` | Tiempo medio de servicio exponencial. | min/silla | 8, 10, 15, 12 |
+| `tiempo_min` | `ti` | Tiempo medio de servicio exponencial. | min/mueble | 8, 10, 15, 12 |
 
 **Indicadores teóricos (M/M/1) que se calculan a partir de esos parámetros:**
 
 | Símbolo | Fórmula | Significado |
 | --- | :---: | --- |
-| `μ` | `60 / ti` | Tasa de servicio de una persona (sillas/h). |
-| `Ci` | `c · μ` | Capacidad de la estación (sillas/h). |
+| `μ` | `60 / ti` | Tasa de servicio de una persona (muebles/h). |
+| `Ci` | `c · μ` | Capacidad de la estación (muebles/h). |
 | `C_línea` | `min(Ci)` | Capacidad máxima sostenible de la línea: la marca la estación más lenta. |
-| `Holgura` | `C_línea − λ` | Sillas/h que la línea todavía podría absorber sin saturarse. |
+| `Holgura` | `C_línea − λ` | Muebles/h que la línea todavía podría absorber sin saturarse. |
 | `ρ` | `λ / μ` | Utilización (con `c = 1`; en general `λ / (c·μ)`). |
-| `Lq` | `ρ² / (1 − ρ)` | Sillas esperando en promedio. |
+| `Lq` | `ρ² / (1 − ρ)` | Muebles esperando en promedio. |
 | `Wq` | `Lq / λ` | Espera media en cola (se muestra en minutos). |
 | `W` | `Wq + 1/μ` | Tiempo total en la estación. |
-| `L` | `λ · W` | Sillas en el sistema (cola + servicio). |
-| `P(N > 1)` | `ρ²` | Fracción del tiempo con al menos una silla esperando. |
+| `L` | `λ · W` | Muebles en el sistema (cola + servicio). |
+| `P(N > 1)` | `ρ²` | Fracción del tiempo con al menos un mueble esperando. |
 | Error % | `abs(sim − teórico) / teórico × 100` | Separación entre simulación y teoría. |
 
 **Para probar otros resultados no se toca Python:**
@@ -523,19 +523,19 @@ más se acerca a su valor teórico (56,3 %). El detalle y el texto de apoyo est�
 
 | Archivo | Escenario | Cambio respecto de E1 | Capacidad | Flujo teórico |
 | --- | --- | --- | :---: | :---: |
-| `escenarios/base.json` | E1 | Línea base. | 4,00 sillas/h | 123,3 min |
-| `escenarios/e2.json` | E2 | Ensamblaje en 12 min. | 5,00 sillas/h | 93,3 min |
-| `escenarios/e3.json` | E3 | Ensamblaje en 10 min. | 5,00 sillas/h | 83,3 min |
+| `escenarios/base.json` | E1 | Línea base. | 4,00 muebles/h | 123,3 min |
+| `escenarios/e2.json` | E2 | Ensamblaje en 12 min. | 5,00 muebles/h | 93,3 min |
+| `escenarios/e3.json` | E3 | Ensamblaje en 10 min. | 5,00 muebles/h | 83,3 min |
 
 En E1 el cuello de botella es ensamblaje (75 %). En E2, ensamblaje y acabado empatan
 al 60 %; en E3 el cuello pasa a acabado (60 %) porque ensamblaje baja al 50 %. La
-producción se mantiene en 3 sillas/h en los tres escenarios porque la línea entrega
+producción se mantiene en 3 muebles/h en los tres escenarios porque la línea entrega
 todo lo que llega: la demanda λ = 3 es menor que la capacidad.
 
-La capacidad máxima de la línea sube de **4,00 a 5,00 sillas/h** al bajar ensamblaje de
+La capacidad máxima de la línea sube de **4,00 a 5,00 muebles/h** al bajar ensamblaje de
 15 a 12 min, y ya no sube al bajarlo a 10 min porque el nuevo cuello es acabado
-(5,00 sillas/h). Es decir, E3 reduce la espera pero no agrega capacidad; para producir
-más de 5 sillas/h habría que mejorar también acabado. Ese es el resultado del objetivo
+(5,00 muebles/h). Es decir, E3 reduce la espera pero no agrega capacidad; para producir
+más de 5 muebles/h habría que mejorar también acabado. Ese es el resultado del objetivo
 5.1 y no se fuerza a que la producción observada suba cuando λ no sube.
 
 ![Ensamblaje y acabado en cada escenario](salidas/graficos/escenarios.png)
@@ -580,8 +580,8 @@ las estaciones queda por debajo del 3,3 %. Los valores por estación están en
 **Qué mide cada indicador**
 
 - `ρ`, `Lq`, `cola_utilizacion` y `cola_p90` se ponderan por tiempo sobre la ventana
-  medida (900 h), no sobre sillas individuales.
-- `Wq` promedia solo las sillas que entraron a la estación después del calentamiento; el
+  medida (900 h), no sobre muebles individuales.
+- `Wq` promedia solo los muebles que entraron a la estación después del calentamiento; el
   flujo, solo las que terminaron después del calentamiento.
 - `cola_max` es el máximo observado en la ventana; `cola_p90` es el percentil 90
   ponderado por tiempo.
@@ -598,9 +598,9 @@ las estaciones queda por debajo del 3,3 %. Los valores por estación están en
   la estación más lenta. No depende de λ.
 - `holgura_h = capacidad_linea_h − λ` indica cuánto podría crecer la demanda sin saturar
   la línea. Si es negativa, la línea no alcanza a atender lo que llega.
-- E1 tiene capacidad 4,00 sillas/h (ensamblaje). Con E2 y E3 sube a 5,00 sillas/h; en E3
-  el límite pasa a acabado. La producción observada sigue en ~3 sillas/h porque solo
-  llegan 3 sillas/h: las mejoras elevan el techo, no la demanda.
+- E1 tiene capacidad 4,00 muebles/h (ensamblaje). Con E2 y E3 sube a 5,00 muebles/h; en E3
+  el límite pasa a acabado. La producción observada sigue en ~3 muebles/h porque solo
+  llegan 3 muebles/h: las mejoras elevan el techo, no la demanda.
 - `cuello_capacidad` es la estación de menor capacidad y `cuello` la de mayor utilización
   simulada. A λ fijo son la misma estación; se reportan ambos para poder contrastarlos.
 

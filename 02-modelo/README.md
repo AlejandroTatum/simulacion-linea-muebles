@@ -11,11 +11,11 @@
 
 ## 1. Descripción del sistema
 
-Se modela una línea de fabricación de sillas con cuatro estaciones en serie:
+Se modela una línea de fabricación de muebles con cuatro estaciones en serie:
 
 **Corte → Lijado → Ensamblaje → Acabado**
 
-Cada silla recorre las estaciones en ese orden. En cada una espera en una cola FIFO
+Cada mueble recorre las estaciones en ese orden. En cada una espera en una cola FIFO
 sin límite y es atendida por un operario. El objetivo es estimar la utilización, la
 cola, la espera y el tiempo total de flujo, identificar el cuello de botella y comparar
 los resultados con la teoría de colas M/M/1.
@@ -24,22 +24,22 @@ los resultados con la teoría de colas M/M/1.
 
 | Elemento | Descripción |
 | --- | --- |
-| Entidad | Silla que llega al sistema y recorre las cuatro estaciones. |
+| Entidad | Mueble que llega al sistema y recorre las cuatro estaciones. |
 | Recurso | Operario de cada estación (`c_i` operarios en paralelo). |
-| Evento de llegada | Llegada de una silla con tiempo entre llegadas exponencial. |
+| Evento de llegada | Llegada de un mueble con tiempo entre llegadas exponencial. |
 | Evento de servicio | Inicio y fin del procesamiento en una estación. |
-| Cola | Espera FIFO de las sillas que no encuentran un operario libre. |
-| Variables de estado | Sillas en cola, operarios ocupados, sillas terminadas y tiempos de espera. |
+| Cola | Espera FIFO de los muebles que no encuentran un operario libre. |
+| Variables de estado | Muebles en cola, operarios ocupados, muebles terminados y tiempos de espera. |
 
 En todos los escenarios del informe se usa **un operario por estación** (`c_i = 1`).
 El simulador admite más operarios, pero la comparación teórica implementada es M/M/1.
 
 ## 3. Supuestos
 
-- Las llegadas siguen un proceso de Poisson con tasa `λ` sillas por hora.
+- Las llegadas siguen un proceso de Poisson con tasa `λ` muebles por hora.
 - Los tiempos de servicio son exponenciales con media `t_i` minutos.
 - La disciplina de cola es FIFO y no tiene límite de capacidad.
-- Cada operario atiende una sola silla a la vez.
+- Cada operario atiende un solo mueble a la vez.
 - No hay fallas, turnos, transporte, retrabajo ni tiempos de preparación.
 - La línea comienza vacía y se descarta un periodo de calentamiento.
 - Los parámetros son supuestos académicos; no provienen de datos reales.
@@ -48,14 +48,14 @@ El simulador admite más operarios, pero la comparación teórica implementada e
 
 ### Línea base (E1)
 
-| Estación | Operarios `c_i` | Tiempo medio `t_i` (min/silla) |
+| Estación | Operarios `c_i` | Tiempo medio `t_i` (min/mueble) |
 | --- | :---: | :---: |
 | Corte | 1 | 8 |
 | Lijado | 1 | 10 |
 | Ensamblaje | 1 | 15 |
 | Acabado | 1 | 12 |
 
-Tasa de llegadas: `λ = 3` sillas/h.
+Tasa de llegadas: `λ = 3` muebles/h.
 
 Configuración de la corrida: **30 réplicas independientes** de **1 000 h**, con
 **100 h de calentamiento** descartadas y semilla base **2026**. La ventana medida es
@@ -69,7 +69,7 @@ de 900 h por réplica.
 | E2 | Ensamblaje con `t_3 = 12` min. |
 | E3 | Ensamblaje con `t_3 = 10` min. |
 
-Todos los escenarios mantienen `c_i = 1`, `λ = 3` sillas/h y los mismos tiempos de
+Todos los escenarios mantienen `c_i = 1`, `λ = 3` muebles/h y los mismos tiempos de
 corte, lijado y acabado.
 
 ## 5. Modelo matemático
@@ -79,8 +79,8 @@ corte, lijado y acabado.
 Para cada estación `i`:
 
 ```text
-μ_i = 60 / t_i              (sillas/h que atiende un operario)
-C_i = c_i · μ_i             (capacidad de la estación, sillas/h)
+μ_i = 60 / t_i              (muebles/h que atiende un operario)
+C_i = c_i · μ_i             (capacidad de la estación, muebles/h)
 ρ_i = λ / (c_i · μ_i)       (utilización)
 ```
 
@@ -92,14 +92,14 @@ estable se requiere `ρ_i < 1`.
 Cada estación se aproxima como una cola M/M/1. Con `ρ = λ/μ`:
 
 ```text
-Lq = ρ² / (1 − ρ)           (sillas esperando en cola)
+Lq = ρ² / (1 − ρ)           (muebles esperando en cola)
 Wq = Lq / λ                 (espera media en cola, en horas)
 W  = Wq + 1/μ               (tiempo total en la estación, en horas)
-L  = λ · W                  (sillas en el sistema)
-P(N > 1) = ρ²               (fracción del tiempo con al menos una silla esperando)
+L  = λ · W                  (muebles en el sistema)
+P(N > 1) = ρ²               (fracción del tiempo con al menos un mueble esperando)
 ```
 
-El tiempo de flujo teórico de una silla es la suma de los tiempos `W` de las cuatro
+El tiempo de flujo teórico de un mueble es la suma de los tiempos `W` de las cuatro
 estaciones.
 
 ### 5.3 Ley de Little
@@ -134,10 +134,10 @@ empate, se conserva la primera estación en el orden de la línea.
 | `Lq_i` | Longitud media de la cola. |
 | `Wq_i` | Espera media en cola, en minutos. |
 | `W_i` | Tiempo medio en la estación, en minutos. |
-| `cola_utilizacion` | Porcentaje del tiempo con al menos una silla esperando. |
+| `cola_utilizacion` | Porcentaje del tiempo con al menos un mueble esperando. |
 | `cola_p90` | Percentil 90 de la longitud de la cola, ponderado por tiempo. |
-| `throughput_h` | Sillas terminadas por hora. |
-| `flujo_min` | Tiempo total medio de una silla en la línea. |
+| `throughput_h` | Muebles terminados por hora. |
+| `flujo_min` | Tiempo total medio de un mueble en la línea. |
 | `cuello` | Estación con mayor utilización. |
 
 ## 7. Resultados esperados de la línea base
@@ -150,7 +150,7 @@ empate, se conserva la primera estación en el orden de la línea.
 | Acabado | 60,0 % | 60,0 % | 0,91 | 0,90 | 18,2 | 18,0 |
 
 El cuello de botella de E1 es **Ensamblaje**. La producción simulada es
-**2,998 sillas/h** y el tiempo total de flujo es **124,0 min** frente a **123,3 min**
+**2,998 muebles/h** y el tiempo total de flujo es **124,0 min** frente a **123,3 min**
 teóricos.
 
 ## 8. Implementación
