@@ -211,7 +211,6 @@ simulacion-linea-muebles/
 │   │   ├── resultados-*.csv  # una fila por réplica y estación
 │   │   ├── resumen-*.csv     # promedios, teoría M/M/1 y errores
 │   │   └── linea-*.csv       # producción, capacidad y Ley de Little
-│   └── resultados-base.md
 ├── 04-experimentos/          # resultados de E1–E3, tablas y gráficos
 │   ├── README.md             # explicación de las tablas y resultados
 │   ├── resultados-*.csv

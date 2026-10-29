@@ -470,7 +470,6 @@ para que coincida.
 │   ├── resumen-base.csv     # promedios, teoría M/M/1 y errores
 │   ├── linea-base.csv       # producción, flujo y Ley de Little de la línea
 │   └── graficos/            # PNG por escenario y escenarios.png
-└── resultados-base.md       # texto de la sección 7.1 (ya integrado en el informe)
 ```
 
 Los resultados de los tres escenarios (E1, E2 y E3) están en
@@ -506,8 +505,8 @@ Los resultados de los tres escenarios (E1, E2 y E3) están en
 | Acabado | 60,0 % | 60,0 % | 36,1 % | 18,2 | 18,0 |
 
 El cuello de botella es **Ensamblaje**. Su cola permanece ocupada el 56,4 % del tiempo y es la que
-más se acerca a su valor teórico (56,3 %). El detalle y el texto de apoyo están en
-[`resultados-base.md`](resultados-base.md).
+más se acerca a su valor teórico (56,3 %). El análisis completo está en el informe
+([`05-informe/documento/`](../05-informe/documento/)).
 
 ![Utilización y espera por estación](salidas/graficos/base.png)
 

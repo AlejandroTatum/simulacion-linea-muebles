@@ -1,6 +1,6 @@
 # Experimentos E1–E3
 
-Resultados de los tres escenarios de la Tabla VII del informe, generados con:
+Resultados de los tres escenarios de la Tabla V del informe, generados con:
 
 ```bash
 cd 03-simulacion

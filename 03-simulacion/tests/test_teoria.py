@@ -3,7 +3,7 @@ import pytest
 from modelo.teoria import (capacidad_estacion, capacidad_linea, cuello_por_capacidad,
                            flujo_teorico_min, mm1)
 
-# (tiempo medio en minutos, rho, Lq, Wq en minutos) de la Tabla VI del informe.
+# (tiempo medio en minutos, rho, Lq, Wq en minutos) de la Tabla IV del informe.
 TABLA_E1 = [
     (8.0, 0.40, 0.2667, 5.33),
     (10.0, 0.50, 0.50, 10.0),
