@@ -30,8 +30,8 @@ def mm1(tasa_llegadas, tasa_servicio, servidores=1):
         "wq_min": wq_min,
         "l": lam * w_min / 60,
         "w_min": w_min,
-        "prob_espera": rho,  # P(N >= 1): la silla espera al llegar
-        "prob_cola": rho ** 2,  # P(N > 1): ya hay otra silla esperando
+        "prob_espera": rho,  # P(N >= 1): el mueble espera al llegar
+        "prob_cola": rho ** 2,  # P(N > 1): ya hay otro mueble esperando
     }
 
 
@@ -48,7 +48,7 @@ def flujo_teorico_min(tasa_llegadas, estaciones):
 
 
 def capacidad_estacion(estacion):
-    """Sillas por hora que puede atender una estación: c * mu."""
+    """Muebles por hora que puede atender una estación: c * mu."""
     return estacion["recursos"] * 60 / estacion["tiempo_min"]
 
 

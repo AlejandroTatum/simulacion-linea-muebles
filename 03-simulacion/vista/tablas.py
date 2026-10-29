@@ -35,17 +35,17 @@ def mostrar_resumen(escenario, resumen, linea, archivos):
             tabla[columna] = [_numero(valor) for valor in tabla[columna]]
     print(tabla.to_string(index=False))
 
-    print(f"Sillas terminadas por réplica: {_numero(linea['sillas_terminadas'], 1)} "
-          f"(desv. {_numero(linea['sillas_desv'], 1)})")
-    print(f"Throughput: {_numero(linea['throughput_h'])} sillas/h "
+    print(f"Muebles terminados por réplica: {_numero(linea['muebles_terminados'], 1)} "
+          f"(desv. {_numero(linea['muebles_desv'], 1)})")
+    print(f"Throughput: {_numero(linea['throughput_h'])} muebles/h "
           f"(teoría {_numero(linea['throughput_teorico_h'])}, "
           f"error {_numero(linea['error_throughput_pct'])} %)")
     holgura = linea["holgura_h"]
     if holgura >= 0:
-        holgura_texto = f"holgura frente a λ: {_numero(holgura)} sillas/h"
+        holgura_texto = f"holgura frente a λ: {_numero(holgura)} muebles/h"
     else:
-        holgura_texto = f"déficit frente a λ: {_numero(abs(holgura))} sillas/h"
-    print(f"Capacidad de la línea: {_numero(linea['capacidad_linea_h'])} sillas/h "
+        holgura_texto = f"déficit frente a λ: {_numero(abs(holgura))} muebles/h"
+    print(f"Capacidad de la línea: {_numero(linea['capacidad_linea_h'])} muebles/h "
           f"(la limita {linea['cuello_capacidad']}; {holgura_texto})")
     print(f"Tiempo total de flujo: {_numero(linea['flujo_min'], 1)} min "
           f"({_flujo_teorico_texto(linea['flujo_teorico_min'])}, "

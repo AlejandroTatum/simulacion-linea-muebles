@@ -175,7 +175,7 @@ def test_utilizacion_de_ensamblaje_en_e2_y_e3(archivo, esperado):
         60 * esperado ** 2 / (3 * (1 - esperado)), abs=0.1)
 
 
-def test_sin_sillas_medidas_las_esperas_y_el_flujo_valen_cero(config):
+def test_sin_muebles_medidos_las_esperas_y_el_flujo_valen_cero(config):
     config["tasa_llegadas_h"] = 0.001  # first chair arrives long after the run ends
     config["duracion_h"] = 2
     config["calentamiento_h"] = 1

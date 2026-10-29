@@ -1,1 +1,1 @@
-"""Modelo de la línea de sillas."""
+"""Modelo de la línea de muebles."""

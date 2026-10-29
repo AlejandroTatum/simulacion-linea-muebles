@@ -171,7 +171,7 @@ def graficar_cola(traza, resumen, escenario, ruta_png):
         eje.set_xlim(0, fin_h)
         eje.set_ylim(bottom=0)
         eje.set_xlabel("Tiempo (h)")
-        eje.set_ylabel("Sillas en cola")
+        eje.set_ylabel("Muebles en cola")
         eje.yaxis.set_major_locator(MaxNLocator(integer=True, nbins=5))
         eje.legend(frameon=False, fontsize=7.5, loc="upper right")
         _estilo_eje(eje)
@@ -207,7 +207,7 @@ def graficar_utilizacion_cola(resumen, ruta_png):
     eje_lq.bar(x - ancho / 2, resumen["lq_media"], ancho, yerr=resumen["lq_desv"],
                capsize=3, color=colores, label="Simulación")
     eje_lq.bar(x + ancho / 2, resumen["lq_teorico"], ancho, color=NARANJA, label="Teoría")
-    eje_lq.set_ylabel("Sillas esperando Lq")
+    eje_lq.set_ylabel("Muebles esperando Lq")
     eje_lq.set_title("Longitud media de la cola", fontsize=11, weight="semibold")
 
     for eje in (eje_tiempo, eje_lq):
@@ -217,7 +217,7 @@ def graficar_utilizacion_cola(resumen, ruta_png):
 
     figura.suptitle("Indicadores de cola", fontsize=13, weight="semibold")
     figura.text(0.5, 0.01,
-                "Cola utilizada: porcentaje del tiempo con al menos una silla esperando.",
+                "Cola utilizada: porcentaje del tiempo con al menos un mueble esperando.",
                 ha="center", fontsize=8.5, color=GRIS)
     figura.tight_layout(rect=(0, 0.04, 1, 1))
     _guardar(figura, ruta_png)
@@ -266,7 +266,7 @@ def graficar_distribucion_cola(traza, resumen, escenario, ruta_png):
     eje.set_xlabel("Porcentaje del tiempo medido (%)")
     eje.set_title("¿Cuánto tiempo pasa la cola en cada longitud?",
                   loc="left", fontsize=11, weight="semibold")
-    eje.legend(title="Sillas esperando", bbox_to_anchor=(1.02, 1), loc="upper left",
+    eje.legend(title="Muebles esperando", bbox_to_anchor=(1.02, 1), loc="upper left",
                frameon=False, fontsize=8, title_fontsize=8)
     _estilo_eje(eje)
     figura.suptitle(f"Distribución de la cola · {escenario['nombre']} · réplica 1",
@@ -279,7 +279,7 @@ def graficar_distribucion_cola(traza, resumen, escenario, ruta_png):
 
 
 def graficar_flujo(resumen, escenario, ruta_png):
-    """Tiempo de servicio y espera que componen el flujo de una silla."""
+    """Tiempo de servicio y espera que componen el flujo de un mueble."""
     nombres = list(resumen["estacion"])
     cuello = _cuello(resumen)
     x = np.arange(len(nombres))
@@ -297,7 +297,7 @@ def graficar_flujo(resumen, escenario, ruta_png):
 
     eje.plot(x, teorico, "D", color=VERDE, markersize=7, label="W teórico")
     eje.set_xticks(x, nombres)
-    eje.set_ylabel("Minutos por silla")
+    eje.set_ylabel("Minutos por mueble")
     eje.set_title(f"Composición del tiempo de flujo · {escenario['nombre']}",
                   loc="left", fontsize=12, weight="semibold")
     eje.legend(frameon=False, fontsize=9)
@@ -319,7 +319,7 @@ def graficar_escenarios(resultados, ruta_png):
     metricas = [
         ("utilizacion_media", "utilizacion_teorica", 100.0,
          "ρ (%)", "Utilización"),
-        ("lq_media", "lq_teorico", 1.0, "Lq (sillas)", "Longitud de la cola"),
+        ("lq_media", "lq_teorico", 1.0, "Lq (muebles)", "Longitud de la cola"),
         ("wq_min_media", "wq_min_teorico", 1.0, "Wq (min)", "Tiempo de espera"),
     ]
     colores = [AZUL, VERDE, NARANJA, ROJO, "#7a5c8c", "#5c7a8c"]
@@ -360,7 +360,7 @@ def graficar_escenarios(resultados, ruta_png):
                            va="bottom", fontsize=8, color="#2b2622")
     eje_capacidad.set_xticks(posiciones, etiquetas)
     eje_capacidad.set_title("Producción por hora", fontsize=11, weight="semibold")
-    eje_capacidad.set_ylabel("sillas/h")
+    eje_capacidad.set_ylabel("muebles/h")
     eje_capacidad.legend(loc="upper left", frameon=False, fontsize=8.5)
     _estilo_eje(eje_capacidad)
 
@@ -372,7 +372,7 @@ def graficar_escenarios(resultados, ruta_png):
         f"{etiqueta} = {cuello}" for etiqueta, cuello in zip(etiquetas, cuellos))
     nota += "   ·   Capacidad: " + ", ".join(
         f"{etiqueta} = {capacidad:.2f}" for etiqueta, capacidad
-        in zip(etiquetas, capacidades)) + " sillas/h"
+        in zip(etiquetas, capacidades)) + " muebles/h"
     figura.text(0.5, 0.01, nota, ha="center", fontsize=8.5, color=GRIS)
     figura.tight_layout(rect=(0, 0.05, 1, 1))
     _guardar(figura, ruta_png)

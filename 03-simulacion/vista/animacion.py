@@ -1,4 +1,4 @@
-"""Vista animada del taller de sillas."""
+"""Vista animada del taller de muebles."""
 
 import argparse
 import sys
@@ -94,8 +94,8 @@ def dibujar_piezas(ax, x, y, color):
             _rect(ax, x + 0.57, y, 0.08, 0.4, color)]
 
 
-def dibujar_silla(ax, x, y, color, escala=1.0, visible=False):
-    """Silla de perfil."""
+def dibujar_mueble(ax, x, y, color, escala=1.0, visible=False):
+    """Mueble de perfil."""
     s = escala
     partes = [_rect(ax, x, y, 0.07 * s, 0.32 * s, color, visible=visible),                        # pata delantera
               _rect(ax, x, y + 0.3 * s, 0.5 * s, 0.07 * s, color, visible=visible),               # asiento
@@ -113,7 +113,7 @@ def dibujar_material(ax, etapa, x, y):
         return dibujar_piezas(ax, x, y, MADERA_CORTADA)
     if etapa == 2:
         return dibujar_piezas(ax, x, y, MADERA_LIJADA)
-    return dibujar_silla(ax, x, y, MADERA_LIJADA, escala=0.78)
+    return dibujar_mueble(ax, x, y, MADERA_LIJADA, escala=0.78)
 
 
 class Operario:
@@ -253,7 +253,7 @@ def armar(cfg, horas, paso_min, semilla):
     dibujar_fondo(taller, ancho, y_min, y_max)
 
     taller.text(1.2, 3.55, "Pedidos", ha="center", fontsize=11, weight="semibold")
-    taller.text(1.2, 3.18, f"llegan {cfg['tasa_llegadas_h']:g} sillas/h\nen promedio", ha="center",
+    taller.text(1.2, 3.18, f"llegan {cfg['tasa_llegadas_h']:g} muebles/h\nen promedio", ha="center",
                 va="top", fontsize=8.5, color=TEXTO_SUAVE)
     dibujar_tarima(taller, 1.2, -1.75, ancho=1.6)
     mostrar(dibujar_tablones(taller, 0.87, -1.65), True)
@@ -266,7 +266,7 @@ def armar(cfg, horas, paso_min, semilla):
         plural = "s" if est["recursos"] > 1 else ""
         carteles.append(dibujar_cartel(
             taller, cx,
-            (est["nombre"], f"{est['recursos']} operario{plural} · {est['tiempo_min']:g} min/silla"
+            (est["nombre"], f"{est['recursos']} operario{plural} · {est['tiempo_min']:g} min/mueble"
                             f"\nocupación ρ = {rhos[i]:.0%}"),
             CUELLO if es_cuello else CARTEL))
         if es_cuello:
@@ -303,18 +303,18 @@ def armar(cfg, horas, paso_min, semilla):
     taller.annotate("", xy=(ANCHO_LLEGADA + 0.22, 1.9), xytext=(ANCHO_LLEGADA - 0.22, 1.9),
                     arrowprops={"arrowstyle": "-|>", "color": TEXTO_SUAVE, "lw": 1.4})
 
-    # Depósito con las sillas terminadas.
+    # Depósito con los muebles terminados.
     xd = x_deposito + ANCHO_DEPOSITO / 2
     taller.text(xd, 3.55, "Depósito", ha="center", fontsize=11, weight="semibold")
     contador = taller.text(xd, 3.18, "", ha="center", va="top", fontsize=8.5, color=TEXTO_SUAVE)
     deposito = []
     for k in range(COLUMNAS_DEPOSITO * FILAS_DEPOSITO):
         fila, col = divmod(k, COLUMNAS_DEPOSITO)
-        deposito.append(dibujar_silla(taller, x_deposito + 0.25 + col * 0.78, 1.75 - fila * 1.05,
+        deposito.append(dibujar_mueble(taller, x_deposito + 0.25 + col * 0.78, 1.75 - fila * 1.05,
                                       MADERA_LAQUEADA, escala=0.85))
 
     # Encabezado: escenario, leyenda, reloj y totales.
-    fig.text(0.03, 0.952, "Taller de sillas", fontsize=17, weight="semibold")
+    fig.text(0.03, 0.952, "Taller de muebles", fontsize=17, weight="semibold")
     fig.text(0.03, 0.915, cfg["nombre"], fontsize=10.5, color=TEXTO_SUAVE)
     reloj = fig.text(0.97, 0.952, "", ha="right", fontsize=17, weight="semibold")
     totales = fig.text(0.97, 0.915, "", ha="right", fontsize=10.5, color=TEXTO_SUAVE)
@@ -324,7 +324,7 @@ def armar(cfg, horas, paso_min, semilla):
     fig.legend(handles=claves, loc="center", bbox_to_anchor=(0.5, 0.93), ncol=3, frameon=False,
                fontsize=9.5, handlelength=1.1, handleheight=1.1, columnspacing=1.8)
 
-    # Abajo: sillas esperando en cada estación. La cola es entera, por eso escalones.
+    # Abajo: muebles esperando en cada estación. La cola es entera, por eso escalones.
     colores = ["#4f6d7a", "#a08455", "#6f8f5a", "#7a5c8c", "#5c7a8c", "#8c5c6a"]
     horas_eje = [t / 60 for t in tiempos]
     lineas = []
@@ -340,7 +340,7 @@ def armar(cfg, horas, paso_min, semilla):
     if horas <= 24:
         curvas.xaxis.set_major_locator(MultipleLocator(1 if horas <= 12 else 2))
     curvas.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x:g} h"))
-    curvas.set_title("Sillas esperando en cada estación", loc="left", fontsize=11, weight="semibold",
+    curvas.set_title("Muebles esperando en cada estación", loc="left", fontsize=11, weight="semibold",
                      pad=10)
     curvas.tick_params(colors=TEXTO_SUAVE, length=0, labelsize=8.5)
     for lado in ("top", "right", "left"):
@@ -382,12 +382,12 @@ def armar(cfg, horas, paso_min, semilla):
             relleno[0].remove()
         relleno[0] = curvas.fill_between(horas_eje[:k + 1], estados[nombres[cuello]]["cola"][:k + 1],
                                          step="post", color=CUELLO, alpha=0.1, lw=0, zorder=1)
-        for j, silla in enumerate(deposito):
-            mostrar(silla, j < terminadas[k])
-        contador.set_text(f"{terminadas[k]} sillas terminadas")
+        for j, mueble in enumerate(deposito):
+            mostrar(mueble, j < terminadas[k])
+        contador.set_text(f"{terminadas[k]} muebles terminados")
         h, m = divmod(int(tiempos[k]), 60)
         reloj.set_text(f"hora {h:02d}:{m:02d}")
-        totales.set_text(f"{en_proceso} sillas en proceso · {terminadas[k]} terminadas")
+        totales.set_text(f"{en_proceso} muebles en proceso · {terminadas[k]} terminados")
 
     return Escena(fig, dibujar, tiempos, carteles, ajustar_texto)
 
@@ -409,7 +409,7 @@ def animar(cfg, horas, paso_min, semilla, guardar=None):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Anima el taller de sillas.")
+    parser = argparse.ArgumentParser(description="Anima el taller de muebles.")
     parser.add_argument("--config", type=Path, default=RAIZ / "escenarios" / "base.json",
                         help="escenario JSON (por defecto: escenarios/base.json)")
     parser.add_argument("--horas", type=float, default=8,
