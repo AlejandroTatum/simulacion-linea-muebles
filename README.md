@@ -165,11 +165,11 @@ demanda. Las tablas completas y los gráficos están en
 
 ### Gráficas disponibles
 
-Las gráficas de cada escenario están en `03-simulacion/graficos/` y en
+Las gráficas de cada escenario están en `03-simulacion/salidas/graficos/` y en
 `04-experimentos/graficos/`. La comparación de los tres escenarios está en
 `04-experimentos/graficos/escenarios.png` (también en
-`03-simulacion/graficos/escenarios.png`). Los nombres siguen el escenario (`base`, `e2`,
-`e3`).
+`03-simulacion/salidas/graficos/escenarios.png`). Los nombres siguen el escenario
+(`base`, `e2`, `e3`).
 
 | Archivo | Contenido |
 |---|---|
@@ -177,7 +177,6 @@ Las gráficas de cada escenario están en `03-simulacion/graficos/` y en
 | `cola-<escenario>.png` | Evolución de la cola durante la réplica 1, con el calentamiento sombreado. |
 | `utilizacion-cola-<escenario>.png` | Porcentaje del tiempo con al menos una silla esperando y longitud media `Lq`. |
 | `distribucion-cola-<escenario>.png` | Distribución del tiempo según la cantidad de sillas en cola (0, 1, 2, …). |
-| `replicas-<escenario>.png` | Variabilidad de `ρ`, `Lq` y `Wq` entre las 30 réplicas. |
 | `flujo-<escenario>.png` | Composición del tiempo total de flujo: servicio más espera por estación. |
 | `escenarios.png` | Comparación de ensamblaje y acabado en E1, E2 y E3, más capacidad de la línea frente a producción. Solo se genera al simular dos o más escenarios en la misma corrida. |
 

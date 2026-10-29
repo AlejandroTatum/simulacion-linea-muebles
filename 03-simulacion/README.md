@@ -172,7 +172,6 @@ Esto ejecuta `escenarios/base.json` y escribe los CSV en `salidas/` y los PNG en
 | `salidas/graficos/cola-base.png` | Evolución de la cola en el tiempo (réplica 1). |
 | `salidas/graficos/utilizacion-cola-base.png` | Tiempo con cola y longitud media de la cola. |
 | `salidas/graficos/distribucion-cola-base.png` | Distribución de la longitud de la cola. |
-| `salidas/graficos/replicas-base.png` | Variabilidad de ρ, Lq y Wq entre réplicas. |
 | `salidas/graficos/flujo-base.png` | Composición del tiempo de flujo por estación. |
 | `salidas/graficos/escenarios.png` | Comparación de escenarios (solo si se simulan varios). |
 
@@ -212,7 +211,6 @@ teoría (`utilizacion_teorica`, `lq_teorico`, `wq_min_teorico`,
 - **`utilizacion-cola-base.png`**: porcentaje del tiempo con al menos una silla esperando
   (utilización de la cola) y longitud media `Lq`.
 - **`distribucion-cola-base.png`**: porcentaje del tiempo que la cola pasa con 0, 1, 2, … sillas.
-- **`replicas-base.png`**: cajas de `ρ`, `Lq` y `Wq` para ver cuánto varían las 30 réplicas.
 - **`flujo-base.png`**: cuánto del tiempo total de una silla es servicio y cuánto es espera.
 - **`escenarios.png`**: utilización, `Lq` y `Wq` de ensamblaje y acabado en E1, E2 y E3,
   con el valor teórico marcado con un rombo, más un cuarto panel con la capacidad máxima
@@ -519,8 +517,6 @@ más se acerca a su valor teórico (56,3 %). El detalle y el texto de apoyo est�
 
 ![Distribución de la longitud de la cola](salidas/graficos/distribucion-cola-base.png)
 
-![Variabilidad entre réplicas](salidas/graficos/replicas-base.png)
-
 ![Composición del tiempo de flujo](salidas/graficos/flujo-base.png)
 
 **Escenarios:**
@@ -591,8 +587,6 @@ las estaciones queda por debajo del 3,3 %. Los valores por estación están en
   ponderado por tiempo.
 - `cola-*.png` y `distribucion-cola-*.png` muestran **solo la réplica 1** (la traza); el
   resto de los indicadores usa las 30 réplicas.
-- `replicas-*.png` no es un promedio: muestra la dispersión de `ρ`, `Lq` y `Wq` entre
-  réplicas.
 - Ley de Little: `lq_little = throughput × Wq / 60` por estación, y `lq_little_total`
   usa la suma de las estaciones en `linea-*.csv`.
 

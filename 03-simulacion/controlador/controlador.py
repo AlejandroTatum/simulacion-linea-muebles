@@ -7,7 +7,7 @@ import pandas as pd
 from modelo.configuracion import ErrorConfiguracion, cargar_escenario
 from modelo.simulacion import SimulacionLinea, comparar_linea
 from vista.graficas import (graficar, graficar_cola, graficar_distribucion_cola,
-                            graficar_escenarios, graficar_flujo, graficar_replicas,
+                            graficar_escenarios, graficar_flujo,
                             graficar_utilizacion_cola)
 from vista.tablas import mostrar_resumen
 
@@ -58,7 +58,6 @@ class ControladorSimulacion:
             "cola": graficos / f"cola-{nombre}.png",
             "utilizacion_cola": graficos / f"utilizacion-cola-{nombre}.png",
             "distribucion_cola": graficos / f"distribucion-cola-{nombre}.png",
-            "replicas": graficos / f"replicas-{nombre}.png",
             "flujo": graficos / f"flujo-{nombre}.png",
         }
 
@@ -68,7 +67,6 @@ class ControladorSimulacion:
         graficar_cola(traza, resumen, escenario, rutas_graficos["cola"])
         graficar_utilizacion_cola(resumen, rutas_graficos["utilizacion_cola"])
         graficar_distribucion_cola(traza, resumen, escenario, rutas_graficos["distribucion_cola"])
-        graficar_replicas(replicas, resumen, rutas_graficos["replicas"])
         graficar_flujo(resumen, escenario, rutas_graficos["flujo"])
 
         linea = comparar_linea(replicas, resumen, escenario)

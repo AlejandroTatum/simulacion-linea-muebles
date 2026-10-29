@@ -75,6 +75,5 @@ El código genera, además de la Figura 1, las siguientes figuras de apoyo:
 - `salidas/graficos/cola-base.png`: evolución de la longitud de la cola durante la primera réplica, con el calentamiento sombreado y los valores medio y teórico de `Lq`.
 - `salidas/graficos/utilizacion-cola-base.png`: porcentaje del tiempo con cola y longitud media `Lq`, comparados con la teoría M/M/1.
 - `salidas/graficos/distribucion-cola-base.png`: distribución del tiempo según la cantidad de sillas esperando.
-- `salidas/graficos/replicas-base.png`: cajas de `ρ`, `Lq` y `Wq` para las 30 réplicas.
 - `salidas/graficos/flujo-base.png`: composición del tiempo total de flujo (servicio más espera) por estación.
 - `salidas/graficos/escenarios.png`: comparación de ensamblaje y acabado (ρ, `Lq` y `Wq`) en E1, E2 y E3, con el valor teórico de cada uno, más la capacidad de la línea frente a la producción simulada.

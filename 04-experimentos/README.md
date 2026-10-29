@@ -48,4 +48,4 @@ está en `resumen-<escenario>.csv`. Los valores por réplica están en
 | `graficos/escenarios.png` | Comparación de los tres escenarios |
 | `graficos/<escenario>.png` | Utilización y espera simuladas frente a las teóricas |
 | `graficos/cola-*.png`, `utilizacion-cola-*.png`, `distribucion-cola-*.png` | Colas por estación |
-| `graficos/flujo-*.png`, `replicas-*.png` | Tiempo total de flujo y variación entre réplicas |
+| `graficos/flujo-*.png` | Tiempo total de flujo por estación |

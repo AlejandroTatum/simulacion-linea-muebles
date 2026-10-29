@@ -40,7 +40,7 @@ actualizar ambas.
 
 ## Imágenes
 
-Las 19 gráficas de `imagenes/` son una **copia** de
+Las 16 gráficas de `imagenes/` son una **copia** de
 `04-experimentos/graficos/` (idénticas a las de `03-simulacion/salidas/graficos/`). Los
 originales no se movieron.
 
@@ -58,7 +58,7 @@ Las figuras que ya usa la plantilla son:
 
 Las demás están disponibles para agregar las figuras que falten:
 `cola-*.png`, `distribucion-cola-*.png`, `utilizacion-cola-*.png`,
-`replicas-*.png`, `e2.png`, `e3.png`.
+`e2.png`, `e3.png`.
 
 ## Qué completar
 

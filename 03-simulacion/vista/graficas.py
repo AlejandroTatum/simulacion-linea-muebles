@@ -278,39 +278,6 @@ def graficar_distribucion_cola(traza, resumen, escenario, ruta_png):
     _guardar(figura, ruta_png)
 
 
-def graficar_replicas(replicas, resumen, ruta_png):
-    """Cajas de utilización, Lq y Wq para ver la variabilidad entre réplicas."""
-    nombres = list(resumen["estacion"])
-    cuello = _cuello(resumen)
-    figura, ejes = plt.subplots(1, 3, figsize=(13, 4.2))
-    metricas = [
-        ("utilizacion", "Utilización ρ", 100.0, "ρ (%)"),
-        ("lq", "Longitud de cola Lq", 1.0, "Sillas"),
-        ("wq_min", "Espera en cola Wq", 1.0, "Minutos"),
-    ]
-
-    for eje, (columna, titulo, factor, etiqueta) in zip(ejes, metricas):
-        datos = [replicas.loc[replicas["estacion"] == nombre, columna].dropna() * factor
-                 for nombre in nombres]
-        cajas = eje.boxplot(datos, tick_labels=nombres, patch_artist=True, widths=0.55,
-                            showmeans=True, meanprops={"marker": "D", "markerfacecolor": "white",
-                                                       "markeredgecolor": "#2b2622",
-                                                       "markersize": 4})
-        for caja, nombre in zip(cajas["boxes"], nombres):
-            caja.set_facecolor(ROJO if nombre == cuello else AZUL)
-            caja.set_alpha(0.75)
-        eje.set_title(titulo, fontsize=11, weight="semibold")
-        eje.set_ylabel(etiqueta)
-        eje.tick_params(axis="x", rotation=15)
-        _estilo_eje(eje)
-
-    figura.suptitle("Variabilidad entre réplicas", fontsize=13, weight="semibold")
-    figura.text(0.5, 0.01, "Caja: cuartiles; línea: mediana; rombo: media.",
-                ha="center", fontsize=8.5, color=GRIS)
-    figura.tight_layout(rect=(0, 0.05, 1, 1))
-    _guardar(figura, ruta_png)
-
-
 def graficar_flujo(resumen, escenario, ruta_png):
     """Tiempo de servicio y espera que componen el flujo de una silla."""
     nombres = list(resumen["estacion"])
