@@ -4,6 +4,7 @@ import argparse
 import copy
 import json
 import sys
+import threading
 from pathlib import Path
 
 import matplotlib
@@ -98,6 +99,10 @@ class Panel:
         self._animacion = None
         self._pausado = False
         self.escena = None
+        self._ultimo_cuadro = []
+        self._calculo = None
+        self._resultado_calculo = {}
+        self._temporizador_calculo = None
 
         self.figura = plt.figure(figsize=(16, 9), facecolor="#faf7f2")
         self.figura.canvas.manager and self.figura.canvas.manager.set_window_title(
@@ -137,7 +142,7 @@ class Panel:
         self.botones = {}
         for (clave, texto, accion), (x, yb) in zip(
                 [("animar", "Animar de nuevo", self.animar), ("pausa", "Pausa", self.pausar),
-                 ("simular", "Simular", self.simular), ("guardar", "Guardar", self.guardar),
+                 ("simular", "Simular", lambda: self.simular(en_segundo_plano=True)), ("guardar", "Guardar", self.guardar),
                  ("restaurar", "Restaurar", self.restaurar)],
                 [(0.02, 0.135), (0.125, 0.135), (0.02, 0.08), (0.125, 0.08), (0.02, 0.025)]):
             boton = Button(fig.add_axes([x, yb, 0.10, 0.045]), texto,
@@ -157,6 +162,7 @@ class Panel:
         self._limpiar_resultados()
         fig.canvas.mpl_connect("resize_event", self._ajustar_taller)
         fig.canvas.mpl_connect("close_event", self._al_cerrar)
+        self._id_repintar = fig.canvas.mpl_connect("draw_event", self._pintar_taller)
         self.animar()
 
     # Lectura del formulario -------------------------------------------------
@@ -177,22 +183,68 @@ class Panel:
 
     # Acciones de los botones ------------------------------------------------
 
-    def simular(self):
-        """Simula con los valores del formulario y dibuja los resultados."""
+    def simular(self, en_segundo_plano=False):
+        """Simula con los valores del formulario y dibuja los resultados.
+
+        Los botones la llaman en segundo plano: las réplicas se calculan en otro hilo y la
+        ventana (animación incluida) sigue respondiendo. Sin segundo plano devuelve
+        (resumen, linea) al terminar.
+        """
         try:
             escenario = self.escenario()
         except ErrorConfiguracion as error:
             self._avisar(f"Error: {error}", error=True)
             return None
 
-        self._avisar(f"Simulando {escenario['replicas']} réplicas de "
-                     f"{_texto(escenario['duracion_h'])} h…")
-        self.figura.canvas.draw()
-        self.figura.canvas.flush_events()
+        aviso = (f"Simulando {escenario['replicas']} réplicas de "
+                 f"{_texto(escenario['duracion_h'])} h…")
+        if not en_segundo_plano:
+            self._avisar(aviso)
+            return self._mostrar(escenario, *self._calcular(escenario))
 
+        if self._calculo is not None and self._calculo.is_alive():
+            self._avisar("Ya hay una simulación en curso; esperá a que termine.")
+            return None
+        self._avisar(aviso + " (la ventana sigue respondiendo)")
+        self._resultado_calculo = {"escenario": escenario}
+
+        def calcular():
+            try:
+                self._resultado_calculo["datos"] = self._calcular(escenario)
+            except Exception as error:  # noqa: BLE001 - se muestra en el panel
+                self._resultado_calculo["error"] = error
+
+        self._calculo = threading.Thread(target=calcular, daemon=True)
+        self._calculo.start()
+        # Matplotlib no se puede tocar desde otro hilo: un temporizador de la ventana
+        # revisa cuándo terminó el cálculo y dibuja los resultados.
+        self._temporizador_calculo = self.figura.canvas.new_timer(interval=250)
+        self._temporizador_calculo.add_callback(self._revisar_calculo)
+        self._temporizador_calculo.start()
+        return None
+
+    @staticmethod
+    def _calcular(escenario):
         replicas, resumen = SimulacionLinea(escenario).correr_todas()
         linea = comparar_linea(replicas, resumen, escenario)
-        cuello = cuello_de_botella(resumen)
+        return resumen, linea, cuello_de_botella(resumen)
+
+    def _revisar_calculo(self):
+        """Dibuja los resultados cuando el cálculo en segundo plano termina."""
+        if self._calculo is None or self._calculo.is_alive():
+            return False
+        if self._temporizador_calculo is not None:
+            self._temporizador_calculo.stop()
+            self._temporizador_calculo = None
+        self._calculo = None
+        resultado = self._resultado_calculo
+        if "error" in resultado:
+            self._avisar(f"Error al simular: {resultado['error']}", error=True)
+        else:
+            self._mostrar(resultado["escenario"], *resultado["datos"])
+        return True
+
+    def _mostrar(self, escenario, resumen, linea, cuello):
         # El taller se vuelve a animar con los mismos valores: toda la pantalla muestra
         # el mismo escenario.
         self.animar()
@@ -215,20 +267,54 @@ class Panel:
             return None
 
         if self._animando():
+            # La animación vieja deja de pedir cuadros y de escuchar la ventana. Si ya
+            # terminó, Matplotlib la detuvo solo.
             self._animacion.event_source.stop()
+            self._animacion._stop()
         if self.escena is not None:
             self.escena.quitar()
+            self._ultimo_cuadro = []
         self.escena = armar(escenario, horas, 5, escenario["semilla"], figura=self.figura,
                             zona=ZONA_TALLER)
-        self.escena.dibujar(0)
-        # Se guarda la referencia: sin ella Matplotlib detiene la animación.
-        self._animacion = FuncAnimation(self.figura, self.escena.dibujar,
+        self._ultimo_cuadro = self.escena.dibujar(0)
+        # blit: cada cuadro redibuja solo el taller; sin eso la ventana entera se redibuja
+        # más lento que el intervalo y deja de responder. Se guarda la referencia: sin ella
+        # Matplotlib detiene la animación.
+        self._animacion = FuncAnimation(self.figura, self._cuadro,
                                         frames=len(self.escena.tiempos), interval=150,
-                                        repeat=False)
+                                        repeat=False, blit=True)
         self._pausado = False
         self.botones["pausa"].label.set_text("Pausa")
         self.figura.canvas.draw_idle()
         return self._animacion
+
+    def _cuadro(self, k):
+        self._ultimo_cuadro = self.escena.dibujar(k)
+        return self._ultimo_cuadro
+
+    def _pintar_taller(self, _evento=None):
+        """Tras un redibujado completo, vuelve a pintar las partes animadas del taller.
+
+        Lo animado no entra en el redibujado completo de Matplotlib; sin esto el taller
+        quedaría vacío al escribir en una casilla con la animación en pausa o terminada.
+        """
+        if self.escena is None:
+            return
+        canvas = self.figura.canvas
+        artistas = [a for a in self._ultimo_cuadro
+                    if a.axes is not None and a.figure is self.figura]
+        ejes = {a.axes for a in artistas}
+        # Recién redibujada, la ventana todavía no tiene nada animado: es el fondo limpio
+        # que blit restaura en cada cuadro. Se guarda antes de pintar; si no, el cuadro
+        # pintado ahora quedaría pegado al fondo y aparecería debajo de los siguientes.
+        cache = getattr(self._animacion, "_blit_cache", None)
+        if cache is not None:
+            for eje in ejes:
+                cache[eje] = (eje._get_view(), canvas.copy_from_bbox(eje.bbox))
+        for artista in artistas:
+            artista.axes.draw_artist(artista)
+        for eje in ejes:
+            canvas.blit(eje.bbox)
 
     def _animando(self):
         """Matplotlib borra el temporizador (event_source) cuando muestra el último cuadro."""

@@ -237,3 +237,57 @@ def test_el_panel_es_solo_m_m_1_con_un_operario_por_estacion(base):
     con_dos = dict(base, estaciones=[dict(e, recursos=2) for e in base["estaciones"]])
     escenario = escenario_desde_formulario(formulario_desde_escenario(con_dos), con_dos)
     assert [e["recursos"] for e in escenario["estaciones"]] == [1, 1, 1, 1]
+
+
+def test_la_animacion_redibuja_solo_el_taller(base):
+    panel = Panel(base)
+    panel.cajas["horas_animacion"].set_val("1")
+    animacion = panel.animar()
+    assert animacion._blit, "cada cuadro redibuja solo lo que cambia (blit)"
+    cambiados = panel.escena.dibujar(1)
+    assert cambiados and all(artista.get_animated() for artista in cambiados)
+
+
+def test_un_redibujado_completo_vuelve_a_pintar_el_taller(base):
+    panel = Panel(base)
+    panel.cajas["horas_animacion"].set_val("1")
+    panel.animar()
+    pintados = []
+    panel._pintar_taller = lambda _evento=None: pintados.append(True)
+    panel.figura.canvas.mpl_disconnect(panel._id_repintar)
+    panel._id_repintar = panel.figura.canvas.mpl_connect("draw_event", panel._pintar_taller)
+    panel.figura.canvas.draw()
+    assert pintados
+
+
+def test_simular_en_segundo_plano_no_bloquea_y_muestra_los_resultados(base):
+    panel = Panel(base)
+    for clave, valor in {"replicas": "2", "duracion_h": "100", "calentamiento_h": "10",
+                         "horas_animacion": "1"}.items():
+        panel.cajas[clave].set_val(valor)
+    assert panel.simular(en_segundo_plano=True) is None, "vuelve enseguida"
+    assert "Simulando" in panel.estado.get_text()
+    panel._calculo.join(timeout=60)
+    assert panel._revisar_calculo() is True
+    assert "Cuello de botella" in panel.estado.get_text()
+
+
+@pytest.mark.parametrize("animar_de_nuevo", [False, True])
+def test_el_blit_no_deja_restos_de_cuadros_anteriores(base, animar_de_nuevo):
+    import numpy as np
+    panel = Panel(base)
+    lienzo = panel.figura.canvas
+    lienzo.draw()
+    if animar_de_nuevo:
+        panel.cajas["tiempo_min_2"].set_val("10")
+        panel.animar()
+        lienzo.draw()
+    animacion = panel._animacion
+    animacion._init_draw()
+    for k in range(1, 25):
+        animacion._draw_next_frame(k, blit=True)
+    con_blit = np.asarray(lienzo.buffer_rgba()).copy()
+    lienzo.draw()  # redibujado completo del mismo cuadro, sin restos
+    completo = np.asarray(lienzo.buffer_rgba())
+    distintos = np.any(con_blit != completo, axis=2).mean()
+    assert distintos < 0.001, f"{distintos:.2%} de píxeles distintos"

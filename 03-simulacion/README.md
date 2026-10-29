@@ -634,5 +634,5 @@ las estaciones queda por debajo del 3,3 %. Los valores por estación están en
   informe salen de `main.py`.
 - La simulación es reproducible: misma semilla → mismos resultados. E1 se comparó contra
   una copia del resumen anterior y quedó idéntico.
-- Las pruebas (118) incluyen teoría M/M/1, capacidad de la línea, los tres escenarios,
+- Las pruebas (123) incluyen teoría M/M/1, capacidad de la línea, los tres escenarios,
   Ley de Little, regresión y gráficos: `python -m pytest`.
