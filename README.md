@@ -75,7 +75,7 @@ Para generar la animación como GIF, sin abrir ventana:
 
 ```bash
 cd 03-simulacion
-python animacion.py --guardar graficos/base.gif
+python animacion.py --guardar salidas/graficos/base.gif
 ```
 
 > **Nota:** si el comando `python` falla, casi siempre es porque el entorno virtual no está
@@ -206,10 +206,11 @@ simulacion-linea-muebles/
 │   ├── escenarios/           # base.json, e2.json, e3.json y su README
 │   ├── tests/                # pruebas automáticas (105)
 │   ├── fuentes/              # fuente Inter y su licencia
-│   ├── graficos/             # PNG de los escenarios y comparación
-│   ├── resultados-*.csv      # una fila por réplica y estación
-│   ├── resumen-*.csv         # promedios, teoría M/M/1 y errores
-│   ├── linea-*.csv           # producción, capacidad y Ley de Little
+│   ├── salidas/              # resultados de la última corrida (--salida lo cambia)
+│   │   ├── graficos/         # PNG de los escenarios y comparación
+│   │   ├── resultados-*.csv  # una fila por réplica y estación
+│   │   ├── resumen-*.csv     # promedios, teoría M/M/1 y errores
+│   │   └── linea-*.csv       # producción, capacidad y Ley de Little
 │   └── resultados-base.md
 ├── 04-experimentos/          # resultados de E1–E3, tablas y gráficos
 │   ├── README.md             # explicación de las tablas y resultados
@@ -217,7 +218,8 @@ simulacion-linea-muebles/
 │   ├── resumen-*.csv
 │   ├── linea-*.csv
 │   └── graficos/
-└── 05-informe/               # informe final (reservada; aún sin DOCX/PDF)
+└── 05-informe/               # informe final
+    └── latex/                # main.tex (IEEEtran), referencias.bib e imagenes/
 ```
 
 ---
