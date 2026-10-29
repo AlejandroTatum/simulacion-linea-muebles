@@ -120,3 +120,21 @@ def test_se_usa_la_fuente_inter_incluida():
     escena = _figura()
     escena.figura.canvas.draw()
     assert escena.carteles[0][1][0].get_fontname() == "Inter"
+
+
+def test_el_taller_se_dibuja_dentro_de_la_zona_pedida():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    from vista.animacion import armar
+    figura = plt.figure()
+    zona = (0.3, 0.4, 0.7, 0.6)
+    escena = armar(_corto(3) | {"duracion_h": 3}, horas=3, paso_min=30, semilla=7,
+                   figura=figura, zona=zona)
+    assert escena.figura is figura
+    for eje in figura.axes:
+        x0, y0, x1, y1 = eje.get_position().extents
+        assert x0 >= zona[0] - 1e-9 and y0 >= zona[1] - 1e-9
+        assert x1 <= zona[0] + zona[2] + 1e-9 and y1 <= zona[1] + zona[3] + 1e-9
+    plt.close(figura)

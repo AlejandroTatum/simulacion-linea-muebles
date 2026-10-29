@@ -307,29 +307,39 @@ python animacion.py --horas 2 --paso 10 --guardar salidas/graficos/prueba.gif
 En Linux, para abrir la ventana hace falta Tk (`sudo apt install python3-tk`). En WSL,
 SSH o servidores sin pantalla, usá siempre `--guardar`.
 
-### 4.6 Cambiar los valores desde una ventana (panel)
+### 4.6 Pantalla única: parámetros, taller animado y resultados (panel)
 
 ```bash
 python panel.py
 python panel.py --config escenarios/e2.json   # arranca con los valores de E2
 ```
 
-Se abre una ventana con casillas para `λ`, los operarios `c` y el tiempo `t` de cada
-estación, las réplicas, la duración, el calentamiento y la semilla. Se acepta coma o punto
-decimal (`4,5` o `4.5`).
+Se abre una sola ventana con todo junto:
+
+- **Izquierda:** casillas para `λ` y el tiempo `t` de cada estación, las
+  réplicas, la duración, el calentamiento, la semilla y las horas a animar. Se acepta coma
+  o punto decimal (`4,5` o `4.5`).
+- **Arriba a la derecha:** el taller animado (arranca solo con los valores iniciales) y la
+  curva de muebles esperando en cada estación.
+- **Abajo a la derecha:** la utilización simulada frente a la teórica, la tabla de
+  resultados y el resumen (cuello de botella, producción, flujo y capacidad).
 
 | Botón | Qué hace |
 | --- | --- |
 | **Simular** | Corre las réplicas con los valores escritos y muestra la utilización simulada frente a la teórica, una tabla con `ρ`, `Lq`, `Wq` y el error, el cuello de botella (en rojo), la producción y el tiempo de flujo. |
-| **Animar** | Abre la animación del taller con esos mismos valores (las horas salen de "Horas a animar"). |
-| **Guardar escenario** | Escribe `escenarios/personalizado.json` para repetir el caso con `python main.py --config escenarios/personalizado.json`. |
-| **Restaurar** | Vuelve a los valores con los que se abrió el panel. |
+| **Animar de nuevo** | Vuelve a correr la animación del taller en la misma ventana con los valores escritos (las horas salen de "Horas a animar"). |
+| **Pausa / Seguir** | Detiene la animación y la reanuda desde el mismo punto. |
+| **Guardar** | Escribe `escenarios/personalizado.json` para repetir el caso con `python main.py --config escenarios/personalizado.json`. |
+| **Restaurar** | Vuelve a los valores con los que se abrió el panel y reinicia la animación. |
 
-Si un valor no sirve (texto, negativo, cero operarios, calentamiento mayor que la duración),
-el panel muestra el error en rojo y no simula. Si una estación recibe más muebles de los que
-puede atender (`λ ≥ c·μ`), la simulación corre igual, pero el panel avisa que esa cola crece
-sin límite y no muestra valor teórico. Si se pone `c > 1`, la simulación y la animación
-funcionan, pero la comparación teórica sale `—` porque la teoría del informe es M/M/1.
+El panel es M/M/1, como el informe: cada estación tiene un operario y no hay casilla para
+cambiarlo. Para probar varios operarios hay que editar `recursos` en un archivo de
+escenario y correrlo con `main.py` (la comparación teórica sale `—` en ese caso).
+
+Si un valor no sirve (texto, negativo, calentamiento mayor que la duración), el panel
+muestra el error en rojo y no simula. Si una estación recibe más muebles de los que puede
+atender (`λ ≥ μ`), la simulación corre igual, pero el panel avisa que esa cola crece sin
+límite y no muestra valor teórico.
 
 Con 30 réplicas de 1 000 h, cada simulación tarda unos 15 s. Para probar rápido, bajá las
 réplicas o la duración.
@@ -446,7 +456,7 @@ para que coincida.
 03-simulacion/
 ├── main.py                  # entrada: simula uno o varios escenarios
 ├── animacion.py             # entrada de la animación
-├── panel.py                 # entrada: ventana para cambiar valores y simular
+├── panel.py                 # entrada: pantalla única con parámetros, taller y resultados
 ├── requirements.txt
 ├── modelo/
 │   ├── configuracion.py     # lee y valida los JSON
@@ -456,7 +466,7 @@ para que coincida.
 │   ├── tablas.py            # salida de la terminal
 │   ├── graficas.py          # gráficos PNG
 │   ├── animacion.py         # dibujo del taller
-│   └── panel.py             # ventana de parámetros
+│   └── panel.py             # pantalla única: parámetros, taller animado y resultados
 ├── controlador/
 │   └── controlador.py       # une modelo y vista
 ├── escenarios/
@@ -492,7 +502,7 @@ Los resultados de los tres escenarios (E1, E2 y E3) están en
 - Resultados en CSV y gráficos PNG.
 - Gráficos de utilización y espera, colas, distribución, flujo y comparación de escenarios.
 - Validación de escenarios antes de ejecutar.
-- Panel para cambiar los parámetros, simular y animar sin editar archivos.
+- Pantalla única (panel) con los parámetros, el taller animado y los resultados.
 - Animación del taller para una réplica.
 
 **Resultados de la línea base:**
@@ -624,5 +634,5 @@ las estaciones queda por debajo del 3,3 %. Los valores por estación están en
   informe salen de `main.py`.
 - La simulación es reproducible: misma semilla → mismos resultados. E1 se comparó contra
   una copia del resumen anterior y quedó idéntico.
-- Las pruebas (105) incluyen teoría M/M/1, capacidad de la línea, los tres escenarios,
+- Las pruebas (123) incluyen teoría M/M/1, capacidad de la línea, los tres escenarios,
   Ley de Little, regresión y gráficos: `python -m pytest`.
