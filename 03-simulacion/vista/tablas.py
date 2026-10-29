@@ -24,6 +24,15 @@ def _flujo_teorico_texto(valor):
     return f"teoría {valor:.1f} min"
 
 
+def texto_inestable(linea):
+    """Aviso de línea inestable; None si la línea es estable."""
+    if linea["estable"]:
+        return None
+    return (f"Línea inestable: λ = {linea['throughput_teorico_h']:g} muebles/h ≥ capacidad "
+            f"{linea['capacidad_linea_h']:g} muebles/h ({linea['cuello_capacidad']}). La cola "
+            "crece sin límite: los tiempos dependen de la duración y no hay valor teórico.")
+
+
 def mostrar_resumen(escenario, resumen, linea, archivos):
     """Imprime el resumen de un escenario ya simulado."""
     print(f"Escenario: {escenario['nombre']} | {escenario['replicas']} réplicas de "
@@ -53,5 +62,8 @@ def mostrar_resumen(escenario, resumen, linea, archivos):
     print(f"Ley de Little: Lq total {_numero(linea['lq_total'])} = "
           f"λ·Wq {_numero(linea['lq_little_total'])} "
           f"(error {_numero(linea['error_little_total_pct'])} %)")
+    aviso = texto_inestable(linea)
+    if aviso:
+        print(aviso)
     print(f"Cuello de botella: {linea['cuello']}")
     print(f"Archivos: {', '.join(archivos)}")

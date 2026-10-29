@@ -56,7 +56,8 @@ class Estacion:
             "recursos": self.recursos,
             "utilizacion": self.area_ocupados / (self.recursos * ventana),
             "lq": self.area_cola / ventana,
-            "wq_min": float(np.mean(self.esperas)) if self.esperas else 0.0,
+            # Sin esperas medidas no hay dato: NaN, no 0 (un 0 parecería "no esperó").
+            "wq_min": float(np.mean(self.esperas)) if self.esperas else float("nan"),
             "cola_utilizacion": self.tiempo_con_cola / ventana,
             "cola_max": float(max(self.tiempos_por_cola, default=0)),
             "cola_p90": self._percentil(0.90),
@@ -110,7 +111,8 @@ class SimulacionLinea:
             "estaciones": filas,
             "terminadas": registro["terminadas"],
             "throughput_h": registro["terminadas"] / (ventana / 60),
-            "flujo_min": float(np.mean(registro["flujos"])) if registro["flujos"] else 0.0,
+            "flujo_min": (float(np.mean(registro["flujos"])) if registro["flujos"]
+                          else float("nan")),
         }
 
     def _mueble(self, entorno, estaciones, rng, inicio, registro):
@@ -232,8 +234,19 @@ def resumir_linea(replicas):
     }
 
 
-def cuello_de_botella(resumen):
-    """Estación con mayor utilización simulada."""
+def linea_estable(escenario):
+    """La línea es estable si llegan menos muebles de los que puede sacar la más lenta."""
+    return escenario["tasa_llegadas_h"] < capacidad_linea(escenario["estaciones"])
+
+
+def cuello_de_botella(resumen, escenario=None):
+    """Estación con mayor utilización simulada.
+
+    Si la línea es inestable, varias estaciones quedan al ~100 % y la utilización ya no
+    distingue cuál limita: se usa la de menor capacidad.
+    """
+    if escenario is not None and not linea_estable(escenario):
+        return cuello_por_capacidad(escenario["estaciones"])
     return resumen.loc[resumen["utilizacion_media"].idxmax(), "estacion"]
 
 
@@ -247,7 +260,8 @@ def comparar_linea(replicas, resumen, escenario):
     little_total = linea["throughput_h"] * float(resumen["wq_min_media"].sum()) / 60
     linea.update({
         "escenario": escenario["nombre"],
-        "cuello": cuello_de_botella(resumen),
+        "estable": linea_estable(escenario),
+        "cuello": cuello_de_botella(resumen, escenario),
         "throughput_teorico_h": lam,
         "error_throughput_pct": _error_pct(linea["throughput_h"], lam),
         "capacidad_linea_h": capacidad,

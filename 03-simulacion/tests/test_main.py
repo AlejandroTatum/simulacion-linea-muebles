@@ -103,3 +103,28 @@ def test_cli_reports_unwritable_output_folder(tmp_path, capsys):
     assert main(["--config", str(_corto(tmp_path, "a")), "--salida", str(ocupado)]) == 1
 
     assert capsys.readouterr().err.startswith(f"Error: no se pudo escribir en {ocupado}")
+
+
+def test_cli_warns_when_the_line_is_unstable(tmp_path, capsys):
+    ruta = _corto(tmp_path, "inestable", tasa_llegadas_h=10)
+    assert main(["--config", str(ruta), "--salida", str(tmp_path / "out")]) == 0
+    salida = capsys.readouterr().out
+    assert ("Línea inestable: λ = 10 muebles/h ≥ capacidad 4 muebles/h (Ensamblaje). La cola "
+            "crece sin límite: los tiempos dependen de la duración y no hay valor teórico."
+            ) in salida
+    assert "Cuello de botella: Ensamblaje" in salida
+
+
+def test_cli_does_not_warn_for_a_stable_line(tmp_path, capsys):
+    assert main(["--config", str(_corto(tmp_path, "a")), "--salida", str(tmp_path / "out")]) == 0
+    assert "Línea inestable" not in capsys.readouterr().out
+
+
+def test_cli_rejects_an_exaggerated_scenario_without_writing(tmp_path, capsys):
+    ruta = _corto(tmp_path, "enorme", tasa_llegadas_h=100000)
+    assert main(["--config", str(ruta), "--salida", str(tmp_path / "out")]) == 1
+    captura = capsys.readouterr()
+    assert captura.out == ""
+    assert captura.err == (f"Error: {ruta}: tasa_llegadas_h × duracion_h da 30000000 muebles "
+                           "por réplica; el máximo es 200000. Bajá λ o la duración\n")
+    assert not (tmp_path / "out").exists()

@@ -1,5 +1,6 @@
 import copy
 import json
+import math
 from pathlib import Path
 
 import pytest
@@ -175,11 +176,51 @@ def test_utilizacion_de_ensamblaje_en_e2_y_e3(archivo, esperado):
         60 * esperado ** 2 / (3 * (1 - esperado)), abs=0.1)
 
 
-def test_sin_muebles_medidos_las_esperas_y_el_flujo_valen_cero(config):
+def test_sin_muebles_medidos_las_esperas_y_el_flujo_quedan_sin_datos(config):
     config["tasa_llegadas_h"] = 0.001  # first chair arrives long after the run ends
     config["duracion_h"] = 2
     config["calentamiento_h"] = 1
     resultado = SimulacionLinea(config).correr_replica(semilla=1)
     assert resultado["terminadas"] == 0
-    assert resultado["flujo_min"] == 0.0
-    assert [e["wq_min"] for e in resultado["estaciones"]] == [0.0] * 4
+    assert math.isnan(resultado["flujo_min"])
+    assert all(math.isnan(e["wq_min"]) for e in resultado["estaciones"])
+
+
+def test_sin_datos_el_resumen_no_inventa_errores_del_100(config):
+    config.update(duracion_h=0.01, calentamiento_h=0, replicas=3)
+    replicas, resumen = SimulacionLinea(config).correr_todas()
+    linea = comparar_linea(replicas, resumen, config)
+    assert resumen["wq_min_media"].isna().all()
+    assert resumen["error_wq_pct"].isna().all()
+    assert math.isnan(linea["flujo_min"])
+    assert math.isnan(linea["error_flujo_pct"])
+
+
+def test_una_linea_saturada_no_informa_un_flujo_de_cero(config):
+    config.update(tasa_llegadas_h=1000, duracion_h=150, calentamiento_h=100, replicas=1)
+    replicas, resumen = SimulacionLinea(config).correr_todas()
+    linea = comparar_linea(replicas, resumen, config)
+    # The line is saturated: no chair that arrived after warm-up gets out.
+    assert math.isnan(linea["flujo_min"]), "flow time must be 'no data', not 0 minutes"
+
+
+def test_una_linea_inestable_marca_el_cuello_por_capacidad(config):
+    config.update(tasa_llegadas_h=10, duracion_h=300, calentamiento_h=30, replicas=2)
+    replicas, resumen = SimulacionLinea(config).correr_todas()
+    linea = comparar_linea(replicas, resumen, config)
+    assert linea["estable"] is False
+    assert linea["cuello"] == "Ensamblaje"
+    assert cuello_de_botella(resumen, config) == "Ensamblaje"
+
+
+def test_una_linea_estable_lo_informa(config):
+    replicas, resumen = SimulacionLinea(config).correr_todas()
+    linea = comparar_linea(replicas, resumen, config)
+    assert linea["estable"] is True
+    assert linea["cuello"] == "Ensamblaje"
+
+
+def test_lambda_igual_a_la_capacidad_es_inestable(config):
+    config.update(tasa_llegadas_h=4, duracion_h=300, calentamiento_h=30, replicas=2)
+    replicas, resumen = SimulacionLinea(config).correr_todas()
+    assert comparar_linea(replicas, resumen, config)["estable"] is False

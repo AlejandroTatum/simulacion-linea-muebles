@@ -291,3 +291,41 @@ def test_el_blit_no_deja_restos_de_cuadros_anteriores(base, animar_de_nuevo):
     completo = np.asarray(lienzo.buffer_rgba())
     distintos = np.any(con_blit != completo, axis=2).mean()
     assert distintos < 0.001, f"{distintos:.2%} de píxeles distintos"
+
+
+def test_el_panel_avisa_que_la_linea_es_inestable(base):
+    panel = Panel(base)
+    for clave, valor in {"tasa_llegadas_h": "10", "replicas": "2", "duracion_h": "200",
+                         "calentamiento_h": "20"}.items():
+        panel.cajas[clave].set_val(valor)
+    assert panel.simular() is not None
+    texto = panel.estado.get_text().replace("\n", " ")
+    assert "Línea inestable: λ = 10 muebles/h ≥ capacidad 4 muebles/h (Ensamblaje)." in texto
+    assert "Cuello de botella: Ensamblaje" in texto
+
+
+def test_el_panel_muestra_sin_datos_en_vez_de_cero(base):
+    panel = Panel(base)
+    for clave, valor in {"replicas": "2", "duracion_h": "0.01",
+                         "calentamiento_h": "0"}.items():
+        panel.cajas[clave].set_val(valor)
+    assert panel.simular() is not None
+    texto = panel.estado.get_text()
+    assert "Tiempo total de flujo: — min" in texto
+    assert "nan" not in texto.lower()
+
+
+def test_el_panel_rechaza_un_escenario_exagerado(base):
+    panel = Panel(base)
+    panel.cajas["tasa_llegadas_h"].set_val("100000")
+    assert panel.simular() is None
+    assert "el máximo es 200000" in panel.estado.get_text().replace("\n", " ")
+
+
+def test_horas_a_animar_tiene_un_maximo(base):
+    panel = Panel(base)
+    panel.cajas["horas_animacion"].set_val("73")
+    assert panel.animar() is None
+    assert panel.estado.get_text() == "Error: Horas a animar: debe ser como máximo 72"
+    panel.cajas["horas_animacion"].set_val("72")
+    assert panel.animar() is not None
