@@ -65,7 +65,19 @@ Tasa de llegadas: `λ = 3` muebles/h. Cada réplica simula 1 000 h y descarta la
 
 ## 3. Instalación
 
-Las dependencias están fijadas en `requirements.txt`.
+Las dependencias están fijadas en `requirements.txt`. **Requiere Python 3.12 o superior**:
+NumPy 2.5.4 no tiene versión para Python 3.10 ni 3.11, y con ellos `pip install` termina con
+
+```text
+ERROR: Could not find a version that satisfies the requirement numpy==2.5.4
+ERROR: No matching distribution found for numpy==2.5.4
+```
+
+Para arreglarlo, instalá Python 3.12+ (python.org, o `sudo apt install python3.12
+python3.12-venv` en Ubuntu), borrá la carpeta `.venv` y creala de nuevo con ese intérprete
+(`py -3.12 -m venv .venv` en Windows, `python3.12 -m venv .venv` en macOS y Linux).
+`python --version` dentro del entorno activo debe mostrar 3.12 o más; en Windows,
+`py --list` muestra las versiones instaladas.
 
 **Ubuntu / Debian:**
 
@@ -102,10 +114,12 @@ Si PowerShell bloquea la activación, ejecutar una vez:
 Set-ExecutionPolicy -Scope Process Bypass
 ```
 
-En Windows CMD la activación es `.venv\Scripts\activate.bat`.
+En Windows CMD la activación es `.venv\Scripts\activate.bat`. En Windows el comando es
+`py` (o `python` con el entorno activo); en macOS y Linux, `python3` fuera del entorno.
 
-Para ver la animación en Linux hace falta Tk (`sudo apt install python3-tk`). En WSL o en
-un servidor sin pantalla, usar `--guardar` como se explica en la sección 4.
+Para abrir el panel o la animación hace falta Tk. En Linux: `sudo apt install python3-tk`.
+En Windows y macOS viene con el instalador de python.org (no lo desmarques al instalar).
+En WSL o en un servidor sin pantalla, usar `--guardar` como se explica en la sección 4.
 
 ## 4. Uso
 
@@ -336,12 +350,16 @@ El panel es M/M/1, como el informe: cada estación tiene un operario y no hay ca
 cambiarlo. Para probar varios operarios hay que editar `recursos` en un archivo de
 escenario y correrlo con `main.py` (la comparación teórica sale `—` en ese caso).
 
-Si un valor no sirve (texto, negativo, calentamiento mayor que la duración), el panel
-muestra el error en rojo y no simula. Si una estación recibe más muebles de los que puede
+Las casillas se repintan solas al escribir, y Simular calcula las réplicas en otro proceso
+para que la ventana siga fluida; cada Simular tarda cerca de un segundo más en arrancar.
+
+Si un valor no sirve (texto, negativo, calentamiento mayor que la duración, o alguno de los
+topes de la sección 5), el panel muestra el error en rojo y no simula. "Horas a animar"
+admite como máximo 72 (`Error: Horas a animar: debe ser como máximo 72`). Si una estación recibe más muebles de los que puede
 atender (`λ ≥ μ`), la simulación corre igual, pero el panel avisa que esa cola crece sin
 límite y no muestra valor teórico.
 
-Con 30 réplicas de 1 000 h, cada simulación tarda unos 15 s. Para probar rápido, bajá las
+Con 30 réplicas de 1 000 h, cada simulación tarda unos segundos. Para probar rápido, bajá las
 réplicas o la duración.
 
 ### 4.7 Solución de problemas
@@ -355,6 +373,10 @@ réplicas o la duración.
 | La ventana se abre y la terminal queda ocupada | La animación sigue en ejecución | Cerrá la ventana para terminar |
 | El GIF tarda mucho | Son muchos cuadros | Probá `--horas 2 --paso 10` |
 | `No such file: escenarios/e2.json` | Ruta relativa desde otra carpeta | Ejecutá desde `03-simulacion` o pasá la ruta completa |
+| `No matching distribution found for numpy==2.5.4` | Python 3.10 o 3.11 | Instalá Python 3.12+ y recreá el entorno (sección 3) |
+| `python` o `py` no se reconoce | Python no está en el PATH | En Windows `py -3.12`; en macOS y Linux `python3` |
+| `No module named 'tkinter'` o el panel no abre | Falta Tk | Linux: `sudo apt install python3-tk`; Windows y macOS: reinstalá Python desde python.org con Tk |
+| `Error: panel: ... debe ser como máximo ...` | El escenario supera un tope (sección 5) | Bajá `replicas`, `duracion_h` o `tasa_llegadas_h` |
 
 Si el error persiste, copiá el mensaje completo y el comando que ejecutaste.
 
@@ -450,6 +472,33 @@ Si una estación queda inestable (`ρ ≥ 1`), el programa **simula igual** (la 
 pero la teoría se muestra como `—` y el flujo como "sin teoría M/M/1": no se ajusta nada
 para que coincida.
 
+**Topes de carga.** Para que un valor exagerado no cuelgue el equipo (con `λ = 1000` y
+1 000 h una sola réplica tardó 10 s y usó 1,1 GB de memoria), `main.py` y el panel
+rechazan el escenario antes de simular, con un mensaje que nombra el campo, el valor y el
+límite. Los tres escenarios del informe quedan muy por debajo:
+
+| Tope | Límite | Línea base |
+|---|:---:|:---:|
+| `replicas` | 200 | 30 |
+| `tasa_llegadas_h × duracion_h` (muebles por réplica) | 200 000 | 3 000 |
+| `tasa_llegadas_h × duracion_h × replicas` (muebles en total) | 1 000 000 | 90 000 |
+
+Los límites son las constantes `MAX_REPLICAS`, `MAX_MUEBLES_POR_REPLICA` y
+`MAX_MUEBLES_TOTALES` de `modelo/configuracion.py`. En el panel, además, "Horas a animar"
+no puede pasar de 72 (`MAX_HORAS_ANIMACION` en `vista/panel.py`).
+
+**Línea inestable.** Si `λ ≥ capacidad de la línea` (la estación más lenta), no se
+rechaza: mostrar la cola que crece es parte de la lección. La terminal y el panel agregan
+el aviso `Línea inestable: λ = 10 muebles/h ≥ capacidad 4 muebles/h (Ensamblaje). La cola
+crece sin límite: ...`, el cuello de botella es la estación de menor capacidad (con todas
+saturadas la utilización no distingue una de otra) y los tiempos dependen de la duración
+simulada, no de un valor teórico.
+
+**Sin datos.** Si no se midió ninguna espera ni ningún flujo (por ejemplo, `duracion_h`
+muy corta o `λ` tan alta que ningún mueble termina), el valor es "sin datos": se muestra
+`—` en la terminal y en el panel, no `0`, y el error porcentual de esa fila también es
+`—`. Los promedios entre réplicas ignoran las réplicas sin datos.
+
 ## 6. Estructura del proyecto
 
 ```text
@@ -496,12 +545,12 @@ Los resultados de los tres escenarios (E1, E2 y E3) están en
 - Simulación de la línea con estaciones, colas FIFO y un operario por estación en todos los
   escenarios (el motor admite varios operarios, pero la teoría del informe es M/M/1).
 - Comparación automática con la teoría M/M/1 y verificación de la Ley de Little.
-- Detección del cuello de botella por utilización.
+- Detección del cuello de botella por utilización (por capacidad si la línea es inestable).
 - Verificación de la Ley de Little y del tiempo total de flujo por escenario.
 - Indicadores de cola: utilización, percentil 90 y máximo.
 - Resultados en CSV y gráficos PNG.
 - Gráficos de utilización y espera, colas, distribución, flujo y comparación de escenarios.
-- Validación de escenarios antes de ejecutar.
+- Validación de escenarios antes de ejecutar, con topes de carga y aviso de línea inestable.
 - Pantalla única (panel) con los parámetros, el taller animado y los resultados.
 - Animación del taller para una réplica.
 
@@ -634,5 +683,5 @@ las estaciones queda por debajo del 3,3 %. Los valores por estación están en
   informe salen de `main.py`.
 - La simulación es reproducible: misma semilla → mismos resultados. E1 se comparó contra
   una copia del resumen anterior y quedó idéntico.
-- Las pruebas (123) incluyen teoría M/M/1, capacidad de la línea, los tres escenarios,
+- Las pruebas (152) incluyen teoría M/M/1, capacidad de la línea, los tres escenarios,
   Ley de Little, regresión y gráficos: `python -m pytest`.

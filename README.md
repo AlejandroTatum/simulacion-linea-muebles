@@ -16,38 +16,74 @@ con organización MVC (modelo, vista y controlador).
 
 ## Inicio rápido
 
-Requiere **Python 3.12 o superior**. En Ubuntu 24.04 o superior, instalá el intérprete, el
-módulo `venv`, `pip` y, si vas a abrir el panel o la animación, Tk:
+Requiere **Python 3.12 o superior**: `requirements.txt` fija NumPy 2.5.4, que no existe para
+Python 3.10 ni 3.11. Con una versión anterior, `pip install` falla con:
 
-```bash
-sudo apt update
-sudo apt install -y python3 python3-venv python3-pip python3-tk
+```text
+ERROR: Could not find a version that satisfies the requirement numpy==2.5.4
+ERROR: No matching distribution found for numpy==2.5.4
 ```
 
-Si tu Ubuntu trae una versión anterior de Python, instalá Python 3.12+ y su módulo `venv`,
-y creá el entorno con ese intérprete (por ejemplo, `python3.12 -m venv .venv`).
+La solución es instalar Python 3.12+ (en [python.org](https://www.python.org/downloads/)
+o con el gestor de tu sistema) y crear el entorno con ese intérprete, como se ve abajo.
+Comprobá tu versión con `python --version` (en Windows, `py --list` muestra las instaladas).
 
-Creá y activá el entorno virtual desde la raíz del repositorio e instalá las dependencias
-fijadas en `03-simulacion/requirements.txt`:
+Todos los comandos se ejecutan desde la raíz del repositorio (la carpeta que contiene
+`03-simulacion/`).
+
+**Windows (PowerShell):**
+
+```powershell
+py -3.12 -m venv .venv
+.venv\Scripts\activate
+python -m pip install -r 03-simulacion/requirements.txt
+```
+
+Si PowerShell bloquea la activación, ejecutá una vez
+`Set-ExecutionPolicy -Scope Process Bypass`. En CMD, la activación es
+`.venv\Scripts\activate.bat`.
+
+**macOS:**
 
 ```bash
-cd simulacion-linea-muebles
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r 03-simulacion/requirements.txt
 ```
 
-Ejecutá la simulación base y las pruebas:
+**Linux (Ubuntu 24.04 o superior):** además del intérprete, instalá `venv`, `pip` y, para
+abrir el panel o la animación, Tk:
+
+```bash
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip python3-tk
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r 03-simulacion/requirements.txt
+```
+
+Si tu Ubuntu trae una versión anterior de Python, instalá Python 3.12+ y su módulo `venv`,
+y creá el entorno con ese intérprete (por ejemplo, `python3.12 -m venv .venv`).
+
+Con el entorno activo (el prompt muestra `(.venv)`), entrá a `03-simulacion` y ejecutá:
 
 ```bash
 cd 03-simulacion
-python main.py
-cd ..
-python -m pytest
+python main.py     # simula la línea base y escribe CSV y gráficos en salidas/
+python panel.py    # abre la pantalla única: parámetros, taller animado y resultados
+python -m pytest   # corre las pruebas
 ```
 
-Si `python` no existe dentro del entorno, usá `python3` o directamente
-`.venv/bin/python` (desde la raíz) o `../.venv/bin/python` (desde `03-simulacion`).
+### Si algo falla
+
+| Problema | Causa probable | Solución |
+|---|---|---|
+| `No matching distribution found for numpy==2.5.4` | Python 3.10 o 3.11 | Instalá Python 3.12+ y recreá el entorno (`py -3.12 -m venv .venv` en Windows) |
+| `python` o `py` no se reconoce | Python no está en el PATH | En Windows usá `py -3.12`; en macOS/Linux, `python3` |
+| `No module named 'simpy'` (o `matplotlib`, `numpy`) | El entorno virtual no está activado | Activalo otra vez; si no activa, usá `.venv/bin/python` (Windows: `.venv\Scripts\python.exe`) |
+| `No module named 'tkinter'` | Falta Tk | Linux: `sudo apt install python3-tk`; en Windows y macOS marcá Tk al instalar Python desde python.org |
+| `No module named 'vista'` o `No such file: panel.py` | Estás en otra carpeta | `cd 03-simulacion` |
+| `TclError: no display name and no $DISPLAY` | No hay entorno gráfico (SSH, WSL) | Usá `python animacion.py --guardar salidas/graficos/base.gif` |
 
 Las dependencias directas fijadas en `requirements.txt` son:
 
@@ -91,7 +127,7 @@ python animacion.py --guardar salidas/graficos/base.gif
 |---|---|:---:|
 | Investigación y marco teórico | [`01-investigacion/`](01-investigacion/) | Lista original de referencias (`referencias.bib`, 8 entradas); la bibliografía final del informe está en [`05-informe/latex/referencias.bib`](05-informe/latex/referencias.bib) |
 | Modelo matemático | [`02-modelo/`](02-modelo/) | [`README.md`](02-modelo/README.md) con el modelo matemático: supuestos, parámetros, ecuaciones e indicadores |
-| Programación y simulación | [`03-simulacion/`](03-simulacion/) | ✅ Terminado: simulación, panel y animación; **123 pruebas pasan** |
+| Programación y simulación | [`03-simulacion/`](03-simulacion/) | ✅ Terminado: simulación, panel y animación; **152 pruebas pasan** |
 | Experimentos (E1, E2, E3) | [`04-experimentos/`](04-experimentos/) | ✅ Resultados, tablas y gráficas generados |
 | Informe final (formato IEEE) | [`05-informe/documento/`](05-informe/documento/) | ✅ [`Informe_Linea_Muebles_IEEE.pdf`](05-informe/documento/Informe_Linea_Muebles_IEEE.pdf) y su DOCX editable |
 
@@ -205,7 +241,7 @@ simulacion-linea-muebles/
 │   ├── vista/                # tablas, gráficos, animación y panel
 │   ├── controlador/          # une modelo y vista
 │   ├── escenarios/           # base.json, e2.json, e3.json y su README
-│   ├── tests/                # pruebas automáticas (123)
+│   ├── tests/                # pruebas automáticas (152)
 │   ├── fuentes/              # fuente Inter y su licencia
 │   ├── salidas/              # resultados de la última corrida (--salida lo cambia)
 │   │   ├── graficos/         # PNG de los escenarios y comparación
@@ -242,7 +278,7 @@ python -m pytest
 
 `pytest.ini` define `testpaths = 03-simulacion/tests` y
 `pythonpath = 03-simulacion`, por lo que las importaciones del proyecto se resuelven sin
-configuración adicional. Estado actual: **123 pruebas pasan**.
+configuración adicional. Estado actual: **152 pruebas pasan**.
 
 Las pruebas cubren teoría M/M/1, configuración y validación de escenarios, simulación,
 capacidad de la línea, los tres escenarios, Ley de Little, regresión de E1, gráficos,
