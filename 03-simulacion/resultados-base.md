@@ -59,7 +59,7 @@ ensamblaje deja de serlo.
 
 | Escenario | Ensamblaje: ρ / Lq / Wq | Acabado: ρ / Lq / Wq | Flujo simulado (teórico) |
 | --- | :---: | :---: | :---: |
-| E2 (12 min) | 59,8 % / 0,87 / 17,3 min | 59,8 % / 0,89 / 17,7 min | 92,2 min (93,3 min) |
+| E2 (12 min) | 59,8 % / 0,86 / 17,3 min | 59,8 % / 0,89 / 17,7 min | 92,2 min (93,3 min) |
 | E3 (10 min) | 49,7 % / 0,48 / 9,7 min | 59,6 % / 0,87 / 17,5 min | 82,2 min (83,3 min) |
 
 En E2, ensamblaje y acabado empatan en 60 % de utilización y 18,0 min de espera teórica.

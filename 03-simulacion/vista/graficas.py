@@ -1,4 +1,4 @@
-"""Gráficos de resultados: utilización, cola, variabilidad y escenarios."""
+"""Gráficos de resultados: utilización, colas, distribución, flujo y escenarios."""
 
 import argparse
 import math
