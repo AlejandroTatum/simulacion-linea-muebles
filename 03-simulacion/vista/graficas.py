@@ -356,11 +356,12 @@ def graficar_escenarios(resultados, ruta_png):
         ("wq_min_media", "wq_min_teorico", 1.0, "Wq (min)", "Tiempo de espera"),
     ]
     colores = [AZUL, VERDE, NARANJA, ROJO, "#7a5c8c", "#5c7a8c"]
-    figura, ejes = plt.subplots(1, 3, figsize=(14, 4.6))
+    figura, ejes = plt.subplots(1, 4, figsize=(17.5, 4.6))
     x = np.arange(len(estaciones))
     ancho = 0.8 / max(len(resultados), 1)
 
-    for eje, (columna_sim, columna_teo, factor, etiqueta, titulo) in zip(ejes, metricas):
+    for eje, (columna_sim, columna_teo, factor, etiqueta, titulo) in zip(ejes[:3],
+                                                                        metricas):
         for i, resultado in enumerate(resultados):
             datos = (resultado["resumen"].set_index("estacion")
                      .reindex(estaciones))
@@ -376,11 +377,35 @@ def graficar_escenarios(resultados, ruta_png):
         eje.set_ylabel(etiqueta)
         _estilo_eje(eje)
 
+    # Cuarto panel: capacidad máxima de la línea frente a la producción observada.
+    eje_capacidad = ejes[3]
+    posiciones = np.arange(len(resultados))
+    capacidades = [resultado["linea"]["capacidad_linea_h"] for resultado in resultados]
+    producciones = [resultado["linea"]["throughput_h"] for resultado in resultados]
+    eje_capacidad.bar(posiciones - 0.2, capacidades, 0.38, color=GRIS,
+                      label="Capacidad (cuello)")
+    eje_capacidad.bar(posiciones + 0.2, producciones, 0.38, color=AZUL,
+                      label="Producción simulada")
+    for posicion, capacidad, produccion in zip(posiciones, capacidades, producciones):
+        eje_capacidad.text(posicion - 0.2, capacidad, f"{capacidad:.2f}", ha="center",
+                           va="bottom", fontsize=8, color="#2b2622")
+        eje_capacidad.text(posicion + 0.2, produccion, f"{produccion:.2f}", ha="center",
+                           va="bottom", fontsize=8, color="#2b2622")
+    eje_capacidad.set_xticks(posiciones, etiquetas)
+    eje_capacidad.set_title("Producción por hora", fontsize=11, weight="semibold")
+    eje_capacidad.set_ylabel("sillas/h")
+    eje_capacidad.legend(loc="upper left", frameon=False, fontsize=8.5)
+    _estilo_eje(eje_capacidad)
+
     ejes[0].legend(frameon=False, fontsize=8.5)
-    figura.suptitle("Ensamblaje y acabado en cada escenario", fontsize=13, weight="semibold")
+    figura.suptitle("Escenarios: estaciones críticas y capacidad de la línea",
+                    fontsize=13, weight="semibold")
     cuellos = [resultado["cuello"] for resultado in resultados]
     nota = "Cuello de botella: " + ", ".join(
         f"{etiqueta} = {cuello}" for etiqueta, cuello in zip(etiquetas, cuellos))
+    nota += "   ·   Capacidad: " + ", ".join(
+        f"{etiqueta} = {capacidad:.2f}" for etiqueta, capacidad
+        in zip(etiquetas, capacidades)) + " sillas/h"
     figura.text(0.5, 0.01, nota, ha="center", fontsize=8.5, color=GRIS)
     figura.tight_layout(rect=(0, 0.05, 1, 1))
     _guardar(figura, ruta_png)
