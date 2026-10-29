@@ -72,12 +72,12 @@ def test_las_mejoras_aumentan_la_capacidad_pero_no_la_produccion_actual():
         replicas, resumen = SimulacionLinea(cfg).correr_todas()
         resultados[ruta.stem] = comparar_linea(replicas, resumen, cfg)
 
-    # La capacidad máxima de la línea sube de 4 a 5 sillas/h.
+    # La capacidad máxima de la línea sube de 4 a 5 muebles/h.
     assert capacidad_linea(cargar_escenario(BASE)["estaciones"]) == pytest.approx(4.0)
     assert resultados["base"]["capacidad_linea_h"] == pytest.approx(4.0)
     assert resultados["e2"]["capacidad_linea_h"] == pytest.approx(5.0)
     assert resultados["e3"]["capacidad_linea_h"] == pytest.approx(5.0)
 
-    # La producción observada sigue limitada por la demanda λ = 3 sillas/h.
+    # La producción observada sigue limitada por la demanda λ = 3 muebles/h.
     for nombre, linea in resultados.items():
         assert linea["throughput_h"] == pytest.approx(3.0, rel=0.05), nombre

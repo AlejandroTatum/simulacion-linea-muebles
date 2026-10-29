@@ -1,2 +1,2 @@
-sillas_terminadas,sillas_desv,throughput_h,flujo_min,flujo_desv,escenario,cuello,throughput_teorico_h,error_throughput_pct,capacidad_linea_h,cuello_capacidad,holgura_h,flujo_teorico_min,error_flujo_pct,lq_total,lq_little_total,error_little_total_pct
+muebles_terminados,muebles_desv,throughput_h,flujo_min,flujo_desv,escenario,cuello,throughput_teorico_h,error_throughput_pct,capacidad_linea_h,cuello_capacidad,holgura_h,flujo_teorico_min,error_flujo_pct,lq_total,lq_little_total,error_little_total_pct
 2699.433333,56.871109,2.99937,92.247557,4.07888,E2 - Ensamblaje en 12 min,Ensamblaje,3,0.020988,5.0,Ensamblaje,2.0,93.333333,1.163332,2.517485,2.513598,0.154665

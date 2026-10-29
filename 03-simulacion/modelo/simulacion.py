@@ -1,4 +1,4 @@
-"""Motor de simulación de la línea de sillas."""
+"""Motor de simulación de la línea de muebles."""
 
 import numpy as np
 import pandas as pd
@@ -113,8 +113,8 @@ class SimulacionLinea:
             "flujo_min": float(np.mean(registro["flujos"])) if registro["flujos"] else 0.0,
         }
 
-    def _silla(self, entorno, estaciones, rng, inicio, registro):
-        """Recorre una silla por todas las estaciones."""
+    def _mueble(self, entorno, estaciones, rng, inicio, registro):
+        """Recorre un mueble por todas las estaciones."""
         llegada = entorno.now
         for estacion in estaciones:
             entrada = entorno.now
@@ -135,10 +135,10 @@ class SimulacionLinea:
             registro["flujos"].append(entorno.now - llegada)
 
     def _llegadas(self, entorno, estaciones, rng, inicio, registro, media_min):
-        """Genera una silla nueva cada tiempo exponencial."""
+        """Genera un mueble nuevo cada tiempo exponencial."""
         while True:
             yield entorno.timeout(rng.exponential(media_min))
-            entorno.process(self._silla(entorno, estaciones, rng, inicio, registro))
+            entorno.process(self._mueble(entorno, estaciones, rng, inicio, registro))
 
     def correr_todas(self, traza=None):
         """Corre todas las réplicas. Si se pasa `traza`, guarda solo la primera."""
@@ -155,7 +155,7 @@ class SimulacionLinea:
                     "replica": numero,
                     "semilla": int(semilla),
                     **estacion,
-                    "sillas_terminadas": resultado["terminadas"],
+                    "muebles_terminados": resultado["terminadas"],
                     "throughput_h": resultado["throughput_h"],
                     "flujo_min": resultado["flujo_min"],
                 })
@@ -226,8 +226,8 @@ def resumir_linea(replicas):
     """Promedios de producción y flujo, sin repetir filas por estación."""
     linea = replicas.drop_duplicates("replica")
     return {
-        "sillas_terminadas": float(linea["sillas_terminadas"].mean()),
-        "sillas_desv": float(linea["sillas_terminadas"].std()),
+        "muebles_terminados": float(linea["muebles_terminados"].mean()),
+        "muebles_desv": float(linea["muebles_terminados"].std()),
         "throughput_h": float(linea["throughput_h"].mean()),
         "flujo_min": float(linea["flujo_min"].mean()),
         "flujo_desv": float(linea["flujo_min"].std()),

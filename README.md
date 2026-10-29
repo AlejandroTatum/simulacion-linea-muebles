@@ -1,6 +1,6 @@
 # Simulación de una línea de producción de muebles
 
-Proyecto grupal: simulación de eventos discretos de una línea de fabricación de sillas (corte → lijado → ensamblaje → acabado), con modelo matemático, programa en Python, experimentos y un informe académico en formato IEEE.
+Proyecto grupal: simulación de eventos discretos de una línea de fabricación de muebles (corte → lijado → ensamblaje → acabado), con modelo matemático, programa en Python, experimentos y un informe académico en formato IEEE.
 
 **Tema:** identificación de cuellos de botella en una línea de producción de muebles de madera
 mediante simulación de eventos discretos en Python.
@@ -101,13 +101,13 @@ datos y la documentación disponible.
 
 ## Simulación
 
-Línea de fabricación de sillas con cuatro estaciones en serie, cada una con su cola FIFO
-sin límite y `ci` operarios que atienden una silla a la vez. Llegadas de Poisson con
-λ = 3 sillas/h y tiempos de servicio exponenciales con media `ti`.
+Línea de fabricación de muebles con cuatro estaciones en serie, cada una con su cola FIFO
+sin límite y `ci` operarios que atienden un mueble a la vez. Llegadas de Poisson con
+λ = 3 muebles/h y tiempos de servicio exponenciales con media `ti`.
 
 **Parámetros de la línea base (Tabla V del informe):**
 
-| Estación | ci | ti (min/silla) |
+| Estación | ci | ti (min/mueble) |
 |---|:---:|:---:|
 | Corte | 1 | 8 |
 | Lijado | 1 | 10 |
@@ -150,16 +150,16 @@ python main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.js
 | Lq ensamblaje | 2,27 | 0,86 | 0,48 |
 | Wq ensamblaje | 45,4 min | 17,3 min | 9,7 min |
 | Tiempo total de flujo | 124,0 min | 92,2 min | 82,2 min |
-| Producción | 2,998 sillas/h | 2,999 sillas/h | 2,988 sillas/h |
-| Capacidad máxima de la línea | 4,00 sillas/h | 5,00 sillas/h | 5,00 sillas/h |
+| Producción | 2,998 muebles/h | 2,999 muebles/h | 2,988 muebles/h |
+| Capacidad máxima de la línea | 4,00 muebles/h | 5,00 muebles/h | 5,00 muebles/h |
 | Cuello de botella | Ensamblaje | Ensamblaje | Acabado |
 | Error máximo frente a la teoría | 1,3 % | 4,1 % | 3,2 % |
 | Error de la Ley de Little (línea) | 0,17 % | 0,15 % | 0,13 % |
 
 Las dos mejoras de tiempo reducen la espera en ensamblaje: E2 baja la utilización a 59,8 %
 y E3 a 49,7 %, y en E3 el cuello de botella pasa a acabado. La capacidad de la línea sube
-de 4,00 a 5,00 sillas/h y ya no sube más porque el nuevo límite es acabado. La producción
-observada no cambia porque solo llegan 3 sillas/h: las mejoras elevan el techo, no la
+de 4,00 a 5,00 muebles/h y ya no sube más porque el nuevo límite es acabado. La producción
+observada no cambia porque solo llegan 3 muebles/h: las mejoras elevan el techo, no la
 demanda. Las tablas completas y los gráficos están en
 [`04-experimentos/`](04-experimentos/README.md).
 
@@ -175,8 +175,8 @@ Las gráficas de cada escenario están en `03-simulacion/salidas/graficos/` y en
 |---|---|
 | `base.png`, `e2.png`, `e3.png` | Utilización y espera media `Wq` de cada estación: simulación frente a teoría M/M/1. |
 | `cola-<escenario>.png` | Evolución de la cola durante la réplica 1, con el calentamiento sombreado. |
-| `utilizacion-cola-<escenario>.png` | Porcentaje del tiempo con al menos una silla esperando y longitud media `Lq`. |
-| `distribucion-cola-<escenario>.png` | Distribución del tiempo según la cantidad de sillas en cola (0, 1, 2, …). |
+| `utilizacion-cola-<escenario>.png` | Porcentaje del tiempo con al menos un mueble esperando y longitud media `Lq`. |
+| `distribucion-cola-<escenario>.png` | Distribución del tiempo según la cantidad de muebles en cola (0, 1, 2, …). |
 | `flujo-<escenario>.png` | Composición del tiempo total de flujo: servicio más espera por estación. |
 | `escenarios.png` | Comparación de ensamblaje y acabado en E1, E2 y E3, más capacidad de la línea frente a producción. Solo se genera al simular dos o más escenarios en la misma corrida. |
 

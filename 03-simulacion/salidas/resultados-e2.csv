@@ -1,4 +1,4 @@
-escenario,replica,semilla,estacion,recursos,utilizacion,lq,wq_min,cola_utilizacion,cola_max,cola_p90,sillas_terminadas,throughput_h,flujo_min
+escenario,replica,semilla,estacion,recursos,utilizacion,lq,wq_min,cola_utilizacion,cola_max,cola_p90,muebles_terminados,throughput_h,flujo_min
 E2 - Ensamblaje en 12 min,1,2727543821,Corte,1,0.391977,0.250698,5.055158,0.157943,8.0,1.0,2673,2.97,84.971436
 E2 - Ensamblaje en 12 min,1,2727543821,Lijado,1,0.490429,0.432123,8.707631,0.240725,7.0,2.0,2673,2.97,84.971436
 E2 - Ensamblaje en 12 min,1,2727543821,Ensamblaje,1,0.587148,0.705772,14.230164,0.332791,10.0,2.0,2673,2.97,84.971436

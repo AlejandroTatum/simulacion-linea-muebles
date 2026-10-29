@@ -95,7 +95,7 @@ class Panel:
 
         self.figura = plt.figure(figsize=(15, 8.5))
         self.figura.canvas.manager and self.figura.canvas.manager.set_window_title(
-            "Simulación de la línea de sillas")
+            "Simulación de la línea de muebles")
         fig = self.figura
         fig.text(0.02, 0.95, "Parámetros de la línea", fontsize=15, weight="semibold",
                  color=TEXTO)
@@ -263,7 +263,7 @@ class Panel:
         eje.set_ylabel("ρ (%)")
         eje.set_ylim(0, 110)
         eje.set_title(f"Utilización por estación (λ = {_texto(escenario['tasa_llegadas_h'])} "
-                      f"sillas/h) · rojo: cuello de botella", loc="left", fontsize=13,
+                      f"muebles/h) · rojo: cuello de botella", loc="left", fontsize=13,
                       color=TEXTO)
         eje.legend(loc="upper left", frameon=False)
         eje.grid(axis="y", alpha=0.3)
@@ -301,8 +301,8 @@ class Panel:
         flujo = (f"{linea['flujo_min']:.1f} min (teoría {flujo_teorico:.1f} min)"
                  if flujo_teorico is not None else f"{linea['flujo_min']:.1f} min")
         lineas = [f"Cuello de botella: {cuello}   ·   Producción: "
-                  f"{linea['throughput_h']:.3f} sillas/h   ·   Tiempo total de flujo: {flujo}",
-                  f"Capacidad máxima de la línea: {linea['capacidad_linea_h']:.2f} sillas/h "
+                  f"{linea['throughput_h']:.3f} muebles/h   ·   Tiempo total de flujo: {flujo}",
+                  f"Capacidad máxima de la línea: {linea['capacidad_linea_h']:.2f} muebles/h "
                   f"(la limita {linea['cuello_capacidad']})"]
         sin_teoria = list(resumen.loc[resumen["utilizacion_teorica"].isna(), "estacion"])
         if sin_teoria:
@@ -316,7 +316,7 @@ class Panel:
                               "La simulación corre igual, pero la teoría del informe "
                               "supone un operario por estación.")
             if inestables:
-                lineas.append(f"Atención: {', '.join(inestables)} recibe más sillas de las "
+                lineas.append(f"Atención: {', '.join(inestables)} recibe más muebles de los "
                               "que puede atender (λ ≥ c·μ). Su cola crece sin límite y no "
                               "hay valor teórico.")
         self._avisar("\n".join(lineas), error=bool(sin_teoria))

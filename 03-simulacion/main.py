@@ -9,7 +9,7 @@ from modelo.configuracion import ErrorConfiguracion
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Simula la línea de producción de sillas.")
+    parser = argparse.ArgumentParser(description="Simula la línea de producción de muebles.")
     parser.add_argument("--config", type=Path, nargs="+",
                         default=[RAIZ / "escenarios" / "base.json"],
                         help="uno o varios escenarios JSON (por defecto: escenarios/base.json)")

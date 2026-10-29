@@ -67,7 +67,7 @@ def test_la_animacion_rechaza_semilla_negativa(tmp_path, capsys):
     assert not (tmp_path / "x.gif").exists()
 
 
-def test_las_sillas_terminadas_guardan_su_hora_de_salida():
+def test_los_muebles_terminados_guardan_su_hora_de_salida():
     cfg = _corto(50)
     salidas = []
     resultado = SimulacionLinea(cfg).correr_replica(5, salidas=salidas)

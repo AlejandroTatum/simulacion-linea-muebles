@@ -17,9 +17,9 @@ operarios, pero la comparación teórica aparece como `—` porque M/M/1 no apli
 
 | Campo | Símbolo | Significado | Regla |
 | --- | :---: | --- | --- |
-| `tasa_llegadas_h` | λ | Sillas que llegan por hora. | Número mayor que 0. |
+| `tasa_llegadas_h` | λ | Muebles que llegan por hora. | Número mayor que 0. |
 | `estaciones[i].recursos` | cᵢ | Operarios en paralelo de la estación. | Entero ≥ 1. |
-| `estaciones[i].tiempo_min` | tᵢ | Tiempo medio de una silla en la estación (min). | Número mayor que 0. |
+| `estaciones[i].tiempo_min` | tᵢ | Tiempo medio de un mueble en la estación (min). | Número mayor que 0. |
 | `replicas` | — | Réplicas independientes. | Entero ≥ 1. |
 | `duracion_h` | — | Horas simuladas por réplica, con el calentamiento incluido. | Número mayor que 0. |
 | `calentamiento_h` | — | Horas iniciales que no se miden. | ≥ 0 y menor que `duracion_h`. |
