@@ -1,13 +1,17 @@
 # Informe final en LaTeX
 
-Esta carpeta contiene la plantilla IEEE del informe final.
+Esta carpeta contiene el código fuente LaTeX del informe final en formato IEEE
+(`IEEEtran`, modo conferencia). `main.tex` es equivalente al documento de
+[`../documento/`](../documento/): mismo título, secciones I a VII, tablas, ecuaciones,
+figuras, referencias y anexos. El entregable es el PDF/DOCX de `documento/`; esta carpeta
+permite regenerar el informe desde LaTeX.
 
 ```text
 05-informe/latex/
-├── main.tex          # plantilla del informe
-├── referencias.bib   # copia de 01-investigacion/referencias.bib
+├── main.tex          # informe completo (secciones I-VII, referencias y anexos A-C)
+├── referencias.bib   # bibliografía del informe (14 entradas)
 ├── README.md         # estas instrucciones
-└── imagenes/         # copias de las gráficas (no se mueven los originales)
+└── imagenes/         # gráficas usadas por main.tex y copias de las demás
 ```
 
 ## Compilación
@@ -28,51 +32,49 @@ También se puede usar:
 latexmk -pdf main.tex
 ```
 
-El resultado es `main.pdf`.
+El resultado es `main.pdf`. Los archivos de compilación (`.aux`, `.bbl`, `.log`, `.pdf`,
+etc.) no se guardan en el repositorio.
 
 Si se compila en Overleaf, subir `main.tex`, `referencias.bib` y la carpeta
-`imagenes/`. La plantilla usa esta copia local con `\bibliography{referencias}`, así
-que no hay que cambiar ninguna ruta.
+`imagenes/`. `main.tex` usa esta copia local con `\bibliography{referencias}`, así que no
+hay que cambiar ninguna ruta.
 
-La bibliografía original sigue en `01-investigacion/referencias.bib`; la de esta
-carpeta es una copia idéntica. Si se agregan o corrigen referencias, conviene
-actualizar ambas.
+## Referencias
+
+`referencias.bib` es la bibliografía del informe: contiene las 10 obras citadas en el texto
+(numeradas [1]–[10] por orden de cita) y las 4 de documentación técnica de la sección
+Bibliografía. Esta última se escribe a mano en `main.tex` y no se cita, así que no altera la
+numeración.
+
+La lista original de la investigación sigue en `01-investigacion/referencias.bib`
+(8 entradas); no se mantiene sincronizada con esta. Si se agregan o corrigen referencias del
+informe, editar solo `referencias.bib` de esta carpeta.
 
 ## Imágenes
 
-Las 16 gráficas de `imagenes/` son una **copia** de
-`04-experimentos/graficos/` (idénticas a las de `03-simulacion/salidas/graficos/`). Los
-originales no se movieron.
+Las gráficas de `imagenes/` son una **copia** de `04-experimentos/graficos/` (idénticas a
+las de `03-simulacion/salidas/graficos/`), más `escenarios-2x2.png`, que solo existe aquí.
+Los originales no se movieron.
 
-Si se vuelven a generar los resultados, copiar de nuevo:
+Si se vuelven a generar los resultados, copiar de nuevo (no sobrescribe
+`escenarios-2x2.png`):
 
 ```bash
 cp 04-experimentos/graficos/*.png 05-informe/latex/imagenes/
 ```
 
-Las figuras que ya usa la plantilla son:
+Las figuras que usa `main.tex` son:
 
-- `escenarios.png`: comparación E1, E2 y E3.
-- `base.png`: utilización y espera de la línea base.
-- `flujo-base.png`: composición del tiempo de flujo.
+- `base.png` (Fig. 1): utilización y espera por estación en E1.
+- `escenarios-2x2.png` (Fig. 2): comparación de E1, E2 y E3 en ensamblaje y acabado
+  (utilización, cola, espera y capacidad frente a producción) en cuatro paneles. Es la
+  versión rediseñada del informe; difiere de `escenarios.png`.
 
-Las demás están disponibles para agregar las figuras que falten:
-`cola-*.png`, `distribucion-cola-*.png`, `utilizacion-cola-*.png`,
-`e2.png`, `e3.png`.
-
-## Qué completar
-
-En `main.tex` están marcados con `% TODO`:
-
-- planteamiento del problema y justificación;
-- descripción de la organización del código y del procedimiento experimental;
-- discusión con los antecedentes;
-- conclusiones, recomendaciones y limitaciones.
-
-También conviene revisar los autores y la afiliación antes de entregar.
+Las demás están disponibles para ampliar el informe: `escenarios.png`, `e2.png`, `e3.png`,
+`flujo-*.png`, `cola-*.png`, `distribucion-cola-*.png` y `utilizacion-cola-*.png`.
 
 ## Requisitos
 
 - `IEEEtran` (incluido en Overleaf; en TeX Live suele estar en `texlive-publishers`).
 - `babel` con español (`texlive-lang-spanish`).
-- `booktabs`, `graphicx`, `amsmath`, `hyperref`, `url`.
+- `amsmath`, `array`, `longtable`, `graphicx`, `cite`, `url`, `hyperref`.
