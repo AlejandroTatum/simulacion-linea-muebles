@@ -6,8 +6,12 @@ ningún valor de la línea escrito adentro.
 | Archivo | Escenario |
 | --- | --- |
 | `base.json` | E1: línea base del informe (Tabla V). |
-| `e2.json` | E2: dos operarios en ensamblaje (`c3 = 2`). |
+| `e2.json` | E2: ensamblaje en 12 min, un operario (`t3 = 12`). |
 | `e3.json` | E3: ensamblaje en 10 min (`t3 = 10`). |
+
+Todos los escenarios usan **un operario por estación** (`cᵢ = 1`), que es el supuesto del
+modelo M/M/1. Si se pone `recursos > 1`, la simulación corre y la animación dibuja varios
+operarios, pero la comparación teórica aparece como `—` porque M/M/1 no aplica.
 
 ## Qué significa cada valor
 

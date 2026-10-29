@@ -51,13 +51,16 @@ def test_cli_runs_several_scenarios_and_writes_a_chart_for_each(tmp_path, capsys
     for nombre in ("a", "b"):
         assert (out / f"resultados-{nombre}.csv").exists()
         assert (out / f"resumen-{nombre}.csv").exists()
+        assert (out / f"linea-{nombre}.csv").exists()
         assert (out / "graficos" / f"{nombre}.png").read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
     assert capsys.readouterr().out.count("Cuello de botella:") == 2
 
 
-def test_cli_prints_theoretical_flow_time(tmp_path, capsys):
+def test_cli_prints_theoretical_flow_time_and_little_law(tmp_path, capsys):
     assert main(["--config", str(_corto(tmp_path, "a")), "--salida", str(tmp_path / "out")]) == 0
-    assert "(teoría 123.3 min)" in capsys.readouterr().out
+    salida = capsys.readouterr().out
+    assert "teoría 123.3 min" in salida
+    assert "Ley de Little" in salida
 
 
 def test_cli_validates_every_scenario_before_running_any(tmp_path, capsys):

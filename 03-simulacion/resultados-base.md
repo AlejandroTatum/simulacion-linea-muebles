@@ -45,15 +45,33 @@ El modelo reproduce los valores teóricos de colas. El error porcentual (ecuaci�
 
 Figura 1. Utilización y tiempo medio de espera por estación en la línea base: simulación (promedio y desviación estándar de 30 réplicas) frente al modelo teórico. *(Insertar `03-simulacion/graficos/base.png`.)*
 
-La cola también se analiza como porcentaje del tiempo en que está ocupada, es decir, con al menos una silla esperando. Los valores simulados fueron 15,9 % en corte, 24,9 % en lijado, 56,4 % en ensamblaje y 36,1 % en acabado; los teóricos `P(N > c)` son 16,0 %, 25,0 %, 56,3 % y 36,0 %, respectivamente. En ensamblaje, el percentil 90 de la longitud de la cola fue 6,7 sillas: durante el 10 % del tiempo hubo siete o más sillas esperando. Esto confirma que el cuello de botella no solo tiene la espera media más alta, sino también la cola más persistente y variable.
+La cola también se analiza como porcentaje del tiempo en que está ocupada, es decir, con al menos una silla esperando. Los valores simulados fueron 15,9 % en corte, 24,9 % en lijado, 56,4 % en ensamblaje y 36,1 % en acabado; los teóricos `P(N > 1) = ρ²` son 16,0 %, 25,0 %, 56,3 % y 36,0 %, respectivamente. En ensamblaje, el percentil 90 de la longitud de la cola fue 6,7 sillas: durante el 10 % del tiempo hubo siete o más sillas esperando. Esto confirma que el cuello de botella no solo tiene la espera media más alta, sino también la cola más persistente y variable.
+
+## Escenarios E2 y E3
+
+Los dos escenarios de mejora cambian solo el ensamblaje, siempre con un operario: E2 lo
+lleva a 12 min y E3 a 10 min. La producción se mantiene en 3 sillas/h en ambos porque la
+línea sigue entregando todo lo que llega. La Tabla compara el ensamblaje con el acabado,
+que es la estación que queda como límite cuando el ensamblaje deja de serlo.
+
+| Escenario | Ensamblaje: ρ / Lq / Wq | Acabado: ρ / Lq / Wq | Flujo simulado (teórico) |
+| --- | :---: | :---: | :---: |
+| E2 (12 min) | 59,8 % / 0,87 / 17,3 min | 59,8 % / 0,89 / 17,7 min | 92,2 min (93,3 min) |
+| E3 (10 min) | 49,7 % / 0,48 / 9,7 min | 59,6 % / 0,87 / 17,5 min | 82,2 min (83,3 min) |
+
+En E2, ensamblaje y acabado empatan en 60 % de utilización y 18,0 min de espera teórica.
+En E3 el cuello de botella pasa a acabado (60 %), mientras ensamblaje baja al 50 %. El
+error mayor es 4,07 % (`Wq` de ensamblaje en E2); todas las demás estaciones quedan por
+debajo del 3,3 %. La Ley de Little se cumple en los tres escenarios con un error menor al
+0,2 % sobre el total de la línea.
 
 ## Figuras complementarias
 
 El código genera, además de la Figura 1, las siguientes figuras de apoyo:
 
 - `graficos/cola-base.png`: evolución de la longitud de la cola durante la primera réplica, con el calentamiento sombreado y los valores medio y teórico de `Lq`.
-- `graficos/utilizacion-cola-base.png`: porcentaje del tiempo con cola y longitud media `Lq`, comparados con la teoría M/M/c.
+- `graficos/utilizacion-cola-base.png`: porcentaje del tiempo con cola y longitud media `Lq`, comparados con la teoría M/M/1.
 - `graficos/distribucion-cola-base.png`: distribución del tiempo según la cantidad de sillas esperando.
 - `graficos/replicas-base.png`: cajas de `ρ`, `Lq` y `Wq` para las 30 réplicas.
 - `graficos/flujo-base.png`: composición del tiempo total de flujo (servicio más espera) por estación.
-- `graficos/escenarios.png`: comparación de producción, flujo y utilización del cuello cuando se simulan varios escenarios en una misma corrida.
+- `graficos/escenarios.png`: comparación de ensamblaje y acabado (ρ, `Lq` y `Wq`) en E1, E2 y E3, con el valor teórico de cada uno.

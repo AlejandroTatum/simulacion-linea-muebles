@@ -1,10 +1,10 @@
 {
-  "nombre": "E2 - Dos ensambladores",
+  "nombre": "E2 - Ensamblaje en 12 min",
   "tasa_llegadas_h": 3,
   "estaciones": [
     {"nombre": "Corte", "recursos": 1, "tiempo_min": 8},
     {"nombre": "Lijado", "recursos": 1, "tiempo_min": 10},
-    {"nombre": "Ensamblaje", "recursos": 2, "tiempo_min": 15},
+    {"nombre": "Ensamblaje", "recursos": 1, "tiempo_min": 12},
     {"nombre": "Acabado", "recursos": 1, "tiempo_min": 12}
   ],
   "replicas": 30,

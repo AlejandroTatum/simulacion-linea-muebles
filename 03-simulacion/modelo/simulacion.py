@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import simpy
 
-from modelo.teoria import mmc
+from modelo.teoria import flujo_teorico_min, mm1
 
 
 class Estacion:
@@ -163,7 +163,7 @@ class SimulacionLinea:
         return replicas, self._resumen(replicas)
 
     def _resumen(self, replicas):
-        """Compara cada estación con su valor teórico M/M/c."""
+        """Compara cada estación con su valor teórico M/M/1."""
         lam = self.escenario["tasa_llegadas_h"]
         filas = []
 
@@ -187,7 +187,7 @@ class SimulacionLinea:
                 "cola_p90_media": datos["cola_p90"].mean(),
             }
             try:
-                teoria = mmc(lam, mu, estacion["recursos"])
+                teoria = mm1(lam, mu, estacion["recursos"])
                 fila.update({
                     "utilizacion_teorica": teoria["utilizacion"],
                     "lq_teorico": teoria["lq"],
@@ -204,7 +204,7 @@ class SimulacionLinea:
                 fila["utilizacion_media"], fila["utilizacion_teorica"])
             fila["error_lq_pct"] = _error_pct(fila["lq_media"], fila["lq_teorico"])
             fila["error_wq_pct"] = _error_pct(fila["wq_min_media"], fila["wq_min_teorico"])
-            # Ley de Little (6): Lq = lambda * Wq, con la tasa observada en la simulacion.
+            # Ley de Little (6): Lq = lambda_efectiva * Wq, con la tasa observada.
             fila["lq_little"] = datos["throughput_h"].mean() * fila["wq_min_media"] / 60
             fila["error_little_pct"] = _error_pct(fila["lq_media"], fila["lq_little"])
             filas.append(fila)
@@ -236,3 +236,24 @@ def resumir_linea(replicas):
 def cuello_de_botella(resumen):
     """Estación con mayor utilización simulada."""
     return resumen.loc[resumen["utilizacion_media"].idxmax(), "estacion"]
+
+
+def comparar_linea(replicas, resumen, escenario):
+    """Producción, flujo y Ley de Little de la línea frente a la teoría M/M/1."""
+    linea = resumir_linea(replicas)
+    lam = escenario["tasa_llegadas_h"]
+    flujo_teorico = flujo_teorico_min(lam, escenario["estaciones"])
+    lq_total = float(resumen["lq_media"].sum())
+    little_total = linea["throughput_h"] * float(resumen["wq_min_media"].sum()) / 60
+    linea.update({
+        "escenario": escenario["nombre"],
+        "cuello": cuello_de_botella(resumen),
+        "throughput_teorico_h": lam,
+        "error_throughput_pct": _error_pct(linea["throughput_h"], lam),
+        "flujo_teorico_min": flujo_teorico,
+        "error_flujo_pct": _error_pct(linea["flujo_min"], flujo_teorico),
+        "lq_total": lq_total,
+        "lq_little_total": little_total,
+        "error_little_total_pct": _error_pct(lq_total, little_total),
+    })
+    return linea

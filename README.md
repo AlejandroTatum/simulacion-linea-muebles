@@ -7,6 +7,8 @@ mediante simulación de eventos discretos en Python.
 
 **Grupo 10:** Victor Roa, Francis Valdiviezo, Cael Soto, Jimmy Ontaneda y Alejandro Padilla.
 
+El modelo teórico es **M/M/1** (un operario por estación) y se ejecutan tres escenarios: **E1** (base), **E2** (ensamblaje en 12 min) y **E3** (ensamblaje en 10 min).
+
 ---
 
 ## Inicio rápido
@@ -104,8 +106,10 @@ semillas distintas, 1 000 h por réplica y 100 h de calentamiento descartadas.
 | Escenario | Archivo | Cambio frente a la base |
 |---|---|---|
 | E1 · Línea base | `base.json` | — |
-| E2 · Más recursos | `e2.json` | `c3 = 2` (dos operarios en ensamblaje) |
+| E2 · Ensamblaje más lento | `e2.json` | `t3 = 12` min (un operario) |
 | E3 · Mejora de tiempos | `e3.json` | `t3 = 10` min en ensamblaje |
+
+Todos los escenarios usan **un operario por estación** (`ci = 1`), por eso la teoría es M/M/1.
 
 Para correr los tres y dejar los resultados en `04-experimentos/`:
 
@@ -117,18 +121,19 @@ python main.py --config escenarios/base.json escenarios/e2.json escenarios/e3.js
 
 ### Resultados principales
 
-| Indicador | E1 Base | E2 (c₃ = 2) | E3 (t₃ = 10 min) |
+| Indicador | E1 Base | E2 (t₃ = 12 min) | E3 (t₃ = 10 min) |
 |---|:---:|:---:|:---:|
-| ρ ensamblaje | 75,1 % | 37,3 % | 49,7 % |
-| Wq ensamblaje | 45,4 min | 2,5 min | 9,7 min |
-| Tiempo total de flujo | 124,0 min | 81,1 min | 82,2 min |
-| Producción | 2,998 sillas/h | 3,002 sillas/h | 2,988 sillas/h |
-| Cuello de botella | Ensamblaje | Acabado | Acabado |
-| Error máximo frente a la teoría | 1,3 % | 1,6 % | 3,2 % |
+| ρ ensamblaje | 75,1 % | 59,8 % | 49,7 % |
+| Wq ensamblaje | 45,4 min | 17,3 min | 9,7 min |
+| Tiempo total de flujo | 124,0 min | 92,2 min | 82,2 min |
+| Producción | 2,998 sillas/h | 2,999 sillas/h | 2,988 sillas/h |
+| Cuello de botella | Ensamblaje | Ensamblaje | Acabado |
+| Error máximo frente a la teoría | 1,3 % | 4,1 % | 3,2 % |
 
-Las dos mejoras casi eliminan la espera en ensamblaje y el cuello de botella pasa a acabado.
-La producción no cambia porque solo llegan 3 sillas/h. Las tablas completas y los gráficos
-están en [`04-experimentos/`](04-experimentos/README.md).
+Las dos mejoras de tiempo reducen la espera en ensamblaje: E2 baja la utilización a 59,8 %
+y E3 a 49,7 %, y en E3 el cuello de botella pasa a acabado. La producción no cambia porque
+solo llegan 3 sillas/h. Las tablas completas y los gráficos están en
+[`04-experimentos/`](04-experimentos/README.md).
 
 ---
 

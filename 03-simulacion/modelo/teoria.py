@@ -1,42 +1,47 @@
-"""Fórmulas M/M/c y tiempo de flujo teórico de la línea."""
-
-from math import factorial
+"""Fórmulas M/M/1 y tiempo de flujo teórico de la línea."""
 
 
-def mmc(tasa_llegadas, tasa_servicio, servidores):
-    """Indicadores de una estación M/M/c. Tasas por hora; tiempos en minutos."""
-    lam, mu, c = tasa_llegadas, tasa_servicio, servidores
-    rho = lam / (c * mu)
+def mm1(tasa_llegadas, tasa_servicio, servidores=1):
+    """Indicadores de una estación M/M/1. Tasas por hora; tiempos en minutos.
+
+    El informe usa M/M/1 porque cada estación tiene una sola persona.
+    Cualquier otro número de servidores se rechaza con un error explícito.
+    """
+    if servidores != 1:
+        raise ValueError(
+            f"La teoría del informe es M/M/1 y no admite {servidores} servidores; "
+            "usá servidores=1")
+
+    lam, mu = tasa_llegadas, tasa_servicio
+    if lam <= 0 or mu <= 0:
+        raise ValueError(
+            f"Las tasas deben ser positivas: lambda = {lam:g}, mu = {mu:g}; "
+            "no se puede calcular una estación M/M/1")
+    rho = lam / mu
     if rho >= 1:
         raise ValueError(f"Estación inestable: rho = {rho:.3f} >= 1")
 
-    a = lam / mu
-    suma = sum(a**k / factorial(k) for k in range(c))
-    p0 = 1 / (suma + a**c / (factorial(c) * (1 - rho)))
-    lq = p0 * a**c * rho / (factorial(c) * (1 - rho) ** 2)
-    prob_espera = p0 * a**c / (factorial(c) * (1 - rho))  # P(N >= c): Erlang C
-    prob_cola = prob_espera * rho  # P(N > c): tiempo con al menos una silla esperando
-    wq = lq / lam
-    w = wq + 1 / mu
+    lq = rho ** 2 / (1 - rho)
+    wq_min = lq / lam * 60
+    w_min = wq_min + 60 / mu
     return {
         "utilizacion": rho,
-        "p0": p0,
         "lq": lq,
-        "wq_min": wq * 60,
-        "l": lam * w,
-        "w_min": w * 60,
-        "prob_espera": prob_espera,
-        "prob_cola": prob_cola,
+        "wq_min": wq_min,
+        "l": lam * w_min / 60,
+        "w_min": w_min,
+        "prob_espera": rho,  # P(N >= 1): la silla espera al llegar
+        "prob_cola": rho ** 2,  # P(N > 1): ya hay otra silla esperando
     }
 
 
 def flujo_teorico_min(tasa_llegadas, estaciones):
-    """Suma el tiempo medio de cada estación; None si alguna es inestable."""
+    """Suma el tiempo medio de cada estación; None si no hay teoría M/M/1."""
     total = 0.0
     for estacion in estaciones:
         mu = 60 / estacion["tiempo_min"]
         try:
-            total += mmc(tasa_llegadas, mu, estacion["recursos"])["w_min"]
+            total += mm1(tasa_llegadas, mu, estacion["recursos"])["w_min"]
         except ValueError:
             return None
     return total

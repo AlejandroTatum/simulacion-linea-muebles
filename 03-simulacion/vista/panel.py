@@ -257,7 +257,7 @@ class Panel:
                 color=colores, label="Simulación")
         teoria = resumen["utilizacion_teorica"].fillna(0) * 100
         eje.bar([i + ancho / 2 for i in x], teoria, ancho, color=GRIS, alpha=0.6,
-                label="Teoría M/M/c")
+                label="Teoría M/M/1")
         eje.axhline(100, color=ROJO, lw=1, ls="--")
         eje.set_xticks(list(x), nombres)
         eje.set_ylabel("ρ (%)")
@@ -302,12 +302,22 @@ class Panel:
                  if flujo_teorico is not None else f"{linea['flujo_min']:.1f} min")
         lineas = [f"Cuello de botella: {cuello}   ·   Producción: "
                   f"{linea['throughput_h']:.3f} sillas/h   ·   Tiempo total de flujo: {flujo}"]
-        saturadas = list(resumen.loc[resumen["utilizacion_teorica"].isna(), "estacion"])
-        if saturadas:
-            lineas.append(f"Atención: {', '.join(saturadas)} recibe más sillas de las que "
-                          "puede atender (λ ≥ c·μ). Su cola crece sin límite y no hay valor "
-                          "teórico.")
-        self._avisar("\n".join(lineas), error=bool(saturadas))
+        sin_teoria = list(resumen.loc[resumen["utilizacion_teorica"].isna(), "estacion"])
+        if sin_teoria:
+            varios = [f"{fila['estacion']} ({fila['recursos']:.0f} operarios)"
+                      for _, fila in resumen.iterrows()
+                      if fila["estacion"] in sin_teoria and fila["recursos"] > 1]
+            inestables = [fila["estacion"] for _, fila in resumen.iterrows()
+                          if fila["estacion"] in sin_teoria and fila["recursos"] == 1]
+            if varios:
+                lineas.append(f"Sin comparación teórica M/M/1: {', '.join(varios)}. "
+                              "La simulación corre igual, pero la teoría del informe "
+                              "supone un operario por estación.")
+            if inestables:
+                lineas.append(f"Atención: {', '.join(inestables)} recibe más sillas de las "
+                              "que puede atender (λ ≥ c·μ). Su cola crece sin límite y no "
+                              "hay valor teórico.")
+        self._avisar("\n".join(lineas), error=bool(sin_teoria))
 
 
 def main(argv=None):
